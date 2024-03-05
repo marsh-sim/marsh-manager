@@ -9,13 +9,17 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Quick)
 qt_standard_project_setup(REQUIRES 6.5)
 
 qt_add_executable(appmarsh-manager
-    main.cpp
+    src/main.cpp
+)
+set_target_properties(appmarsh-manager PROPERTIES
+    OUTPUT_NAME marsh-mgr
 )
 
 qt_add_qml_module(appmarsh-manager
     URI marsh-manager
     VERSION 1.0
-    QML_FILES Main.qml
+    QML_FILES
+        src/Main.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
