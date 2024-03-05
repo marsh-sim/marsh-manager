@@ -2,7 +2,7 @@
 
 Central application for [MARSH-Sim](https://github.com/marsh-sim)
 
-For documentation, see [MARSH Documentation - MARSH Manager](https://marsh-sim.github.io/)
+For documentation, see [MARSH Documentation - MARSH Manager](https://marsh-sim.github.io/manager.html)
 
 ## Installation
 
@@ -12,5 +12,5 @@ To build, open the CMakeLists.txt file as a project in Qt Creator and click "Bui
 
 ## License
 
-[GPL v3.0](GNU General Public License v3.0)
+[GPL v3.0](https://github.com/marsh-sim/marsh-manager/blob/main/LICENSE.txt)
 
