@@ -37,7 +37,7 @@ set_target_properties(appmarsh-manager PROPERTIES
 find_package(Qt6 REQUIRED COMPONENTS Network)
 
 target_include_directories(appmarsh-manager
-    PRIVATE include
+    PRIVATE lib
 )
 
 target_link_libraries(appmarsh-manager

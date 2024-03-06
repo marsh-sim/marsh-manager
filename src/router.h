@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QUdpSocket>
-#include "mavlink/minimal/minimal.hpp"
+#include "mavlink/minimal/mavlink.h"
 
 class Router : public QObject
 {
@@ -22,7 +22,7 @@ private slots:
     void readPendingDatagrams();
 
 private:
-    void messageReceived(Client client, qint64 timestamp, mavlink::mavlink_message_t c_message);
+    void messageReceived(Client client, qint64 timestamp, mavlink_message_t message);
 
     QUdpSocket* udp_socket = nullptr;
 };
