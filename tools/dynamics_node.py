@@ -13,7 +13,8 @@ args = parser.parse_args()
 
 connection_string = f'udpout:{args.manager}:24400'
 mav = mavlink.MAVLink(mavutil.mavlink_connection(connection_string))
-mav.srcComponent = 26
+mav.srcSystem = 1  # default system
+mav.srcComponent = 26  # USER2
 print(f'Sending to {connection_string}')
 
 next_send = 0.0
