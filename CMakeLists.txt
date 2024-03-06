@@ -21,6 +21,7 @@ qt_add_qml_module(appmarsh-manager
     QML_FILES
         src/Main.qml
         SOURCES src/router.h src/router.cpp
+        SOURCES src/applicationdata.h src/applicationdata.cpp
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

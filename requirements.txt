@@ -1,0 +1,6 @@
+autopep8==2.0.4
+future==1.0.0
+lxml==5.1.0
+pycodestyle==2.11.1
+pymavlink==2.4.41
+tomli==2.0.1
