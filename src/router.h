@@ -4,8 +4,8 @@
 #include <QElapsedTimer>
 #include <QObject>
 #include <QUdpSocket>
-#include "mavlink/minimal/mavlink.h"
-#include "src/clientnode.h"
+#include "clientnode.h"
+#include "message.h"
 
 class Router : public QObject
 {
@@ -17,21 +17,14 @@ signals:
 
 private slots:
     void readPendingDatagrams();
+    void clientStateChanged(ClientNode::State state);
 
 private:
-    void receiveMessage(ClientNode::Connection connection,
-                        qint64 timestamp,
-                        mavlink_message_t message);
-    /// Timestamp in microseconds since epoch, as required by the "tlog" files
-    qint64 currentTime();
+    void receiveMessage(ClientNode::Connection connection, Message message);
 
     QUdpSocket *udp_socket = nullptr;
 
-    /// Timestamp of object creation in microseconds from epoch
-    const qint64 start_timestamp;
-    /// Timer started on object creation to get better accuracy than system clock
-    QElapsedTimer running_timer;
-
+    /// List of clients in order of connecting.
     QList<ClientNode *> clients;
 };
 

@@ -1,8 +1,8 @@
 #ifndef APPLICATIONDATA_H
 #define APPLICATIONDATA_H
 
-#include "src/router.h"
 #include <QObject>
+#include "router.h"
 
 /// Central object available in QML through `appData` property
 /// Based on https://doc.qt.io/qt-6.5/qtqml-cppintegration-contextproperties.html#setting-an-object-as-a-context-property
