@@ -1,7 +1,7 @@
-#include "src/applicationdata.h"
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include "applicationdata.h"
 
 int main(int argc, char *argv[])
 {

@@ -23,6 +23,7 @@ qt_add_qml_module(appmarsh-manager
     SOURCES src/router.h src/router.cpp
     SOURCES src/applicationdata.h src/applicationdata.cpp
     SOURCES src/clientnode.h src/clientnode.cpp
+    SOURCES src/message.h src/message.cpp
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -44,6 +45,7 @@ target_include_directories(appmarsh-manager
 
 target_compile_definitions(appmarsh-manager
     PRIVATE MAVLINK_USE_MESSAGE_INFO=1
+    PRIVATE _MATH_DEFINES_DEFINED=1 # prevent MSVC from redefining same constants that Qt provides
 )
 
 target_link_libraries(appmarsh-manager

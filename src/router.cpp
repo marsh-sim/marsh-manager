@@ -3,18 +3,16 @@
 #include <QDateTime>
 #include <QMetaEnum>
 #include <QNetworkDatagram>
+#include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
 #include <algorithm>
 
 Router::Router(QObject *parent)
     : QObject{parent}
-    , start_timestamp{QDateTime::currentMSecsSinceEpoch() * 1000}
 {
     udp_socket = new QUdpSocket(this);
     // FIXME: Should bind exclusively to this port (throw error if already used by another process)
     udp_socket->bind(QHostAddress::LocalHost, 24400);
     connect(udp_socket, &QUdpSocket::readyRead, this, &Router::readPendingDatagrams);
-
-    running_timer.start();
 }
 
 void Router::readPendingDatagrams()
@@ -22,27 +20,63 @@ void Router::readPendingDatagrams()
     while (udp_socket->hasPendingDatagrams()) {
         auto datagram = udp_socket->receiveDatagram();
         for (qsizetype i = 0; i < datagram.data().size(); i++) { // iterators not recommended for QByteArray
-            mavlink_message_t message;
+            mavlink_message_t message_m;
             mavlink_status_t parser_status;
-            if (mavlink_parse_char(MAVLINK_COMM_0, datagram.data().at(i), &message, &parser_status)) {
+            if (mavlink_parse_char(MAVLINK_COMM_0,
+                                   datagram.data().at(i),
+                                   &message_m,
+                                   &parser_status)) {
                 receiveMessage(ClientNode::Connection{datagram.senderAddress(),
                                                       datagram.senderPort()},
-                               currentTime(),
-                               message);
+                               Message{Message::currentTime(), message_m});
             }
             // TODO: Handle repeated messages with CRC error to notify the user of a possible protocol definition mismatch
         }
     }
 }
 
-void Router::receiveMessage(ClientNode::Connection connection,
-                            qint64 timestamp,
-                            mavlink_message_t message)
+void Router::clientStateChanged(ClientNode::State state)
 {
-    const auto info = mavlink_get_message_info(&message);
+    {
+        // HACK: getting sender is not recommended, but it's just for debug here
+        auto sender = qobject_cast<ClientNode *>(QObject::sender());
+        auto metaEnum = QMetaEnum::fromType<ClientNode::State>();
+        if (sender) {
+            qDebug().noquote() << QString("%1:%2")
+                                      .arg(sender->connection().address.toString())
+                                      .arg(sender->connection().port)
+                               << "changed state to"
+                               << metaEnum.valueToKey(static_cast<int>(state));
+        }
+    }
+
+    if (state == ClientNode::State::TimedOut) {
+        // some client previously shadowed may be the first component now
+
+        using SysComp = QPair<SystemId, ComponentId>;
+        QSet<SysComp> connected_sys_comp{};
+
+        for (auto client : clients) { // iterate in order of connecting
+            if (client->state() == ClientNode::State::TimedOut)
+                continue;
+
+            SysComp sys_comp{client->system, client->component};
+            if (!connected_sys_comp.contains(sys_comp)) {
+                client->setShadowed(false);
+                connected_sys_comp.insert(sys_comp);
+            } else {
+                client->setShadowed(true);
+            }
+        }
+    }
+}
+
+void Router::receiveMessage(ClientNode::Connection connection, Message message)
+{
+    const auto info = mavlink_get_message_info(&message.m);
     auto deb = qDebug().noquote(); // reuse the same debug stream to print to a single line
     deb << QString("%1:%2").arg(connection.address.toString()).arg(connection.port)
-        << QString("%1:%2").arg(message.sysid).arg(message.compid) << info->name;
+        << QString("%1:%2").arg(message.m.sysid).arg(message.m.compid) << info->name;
 
     // get the connected client
     ClientNode *client = nullptr;
@@ -52,13 +86,30 @@ void Router::receiveMessage(ClientNode::Connection connection,
         });
         if (it != std::end(clients)) {
             client = *it;
-        } else if (message.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
+        } else if (message.m.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
             // only register clients when receiving heartbeat
-            client = new ClientNode(this, connection);
-            client->system_id = message.sysid;
-            client->component_id = message.compid;
+
+            // look for other clients with the same system and component id
+            it = std::find_if(clients.cbegin(), clients.cend(), [&](const ClientNode *c) {
+                return c->system == message.senderSystem()
+                       && c->component == message.senderComponent();
+            });
+            bool syscomp_free = it == std::end(clients);
+
+            client = new ClientNode(this,
+                                    connection,
+                                    message.senderSystem(),
+                                    message.senderComponent(),
+                                    syscomp_free ? ClientNode::State::Connected
+                                                 : ClientNode::State::Shadowed);
             clients.push_back(client);
-            deb << "registered a new client";
+            connect(client, &ClientNode::stateChanged, this, &Router::clientStateChanged);
+
+            if (syscomp_free)
+                deb << "registered a new client";
+            else
+                deb << "another client for component" << message.m.compid << "in system"
+                    << message.m.sysid;
         }
     }
     if (!client) {
@@ -66,22 +117,18 @@ void Router::receiveMessage(ClientNode::Connection connection,
         return;
     }
 
-    client->receiveMessage(timestamp, message);
+    client->receiveMessage(message);
 
     QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
     for (const auto listener : clients) {
-        if (listener->subscribed_messages.contains(message.msgid)) {
-            message.seq = listener->message_sequence_number++;
-            const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(), &message);
+        if (listener->subscribed_messages.contains(message.id())) {
+            message.m.seq = listener->sending_sequence_number++;
+            const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(),
+                                                           &message.m);
             udp_socket->writeDatagram(send_buffer,
                                       length,
                                       listener->connection().address,
                                       listener->connection().port);
         }
     }
-}
-
-qint64 Router::currentTime()
-{
-    return start_timestamp + running_timer.nsecsElapsed() / 1000;
 }
