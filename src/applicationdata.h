@@ -13,7 +13,11 @@ public:
     explicit ApplicationData(QObject *parent = nullptr);
 
     Q_PROPERTY(Router* router READ router CONSTANT)
-    Router* router() const { return _router; };
+    Q_PROPERTY(QString licenseText READ licenseText CONSTANT)
+
+    Router *router() const { return _router; };
+    QString licenseText();
+
 signals:
 
 private:

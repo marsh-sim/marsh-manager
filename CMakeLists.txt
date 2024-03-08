@@ -24,6 +24,13 @@ qt_add_qml_module(appmarsh-manager
     SOURCES src/applicationdata.h src/applicationdata.cpp
     SOURCES src/clientnode.h src/clientnode.cpp
     SOURCES src/message.h src/message.cpp
+    QML_FILES src/HelpMenu.qml
+)
+
+qt_add_resources(appmarsh-manager "app_text"
+    PREFIX "/"
+    FILES
+        LICENSE.txt
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -37,7 +44,10 @@ set_target_properties(appmarsh-manager PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-find_package(Qt6 REQUIRED COMPONENTS Network)
+find_package(Qt6 REQUIRED COMPONENTS
+    Network
+    QuickControls2
+)
 
 target_include_directories(appmarsh-manager
     PRIVATE modules
@@ -51,6 +61,7 @@ target_compile_definitions(appmarsh-manager
 target_link_libraries(appmarsh-manager
     PRIVATE Qt6::Quick
     PRIVATE Qt6::Network
+    PRIVATE Qt6::QuickControls2
 )
 
 include(GNUInstallDirs)
