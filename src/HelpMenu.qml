@@ -6,6 +6,18 @@ Menu {
     id: root
     title: qsTr("Help")
 
+    readonly property url helpUrl: Qt.url(
+                                       "https://marsh-sim.github.io/manager.html")
+
+    MenuItem {
+        text: qsTr("Online help")
+        onTriggered: {
+            if (!Qt.openUrlExternally(helpUrl)) {
+                onlineHelpFail.visible = true
+            }
+        }
+    }
+
     MenuItem {
         text: qsTr("About MARSH Manager")
         onTriggered: appInfo.visible = true
@@ -19,6 +31,13 @@ Menu {
     MenuItem {
         text: gplInfo.title
         onTriggered: gplInfo.visible = true
+    }
+
+    MessageDialog {
+        id: onlineHelpFail
+        buttons: MessageDialog.Ok
+        text: qsTr("Failed to open help page in system browser")
+        informativeText: helpUrl + "\n." // FIXME: last line of text partially hidden
     }
 
     MessageDialog {
