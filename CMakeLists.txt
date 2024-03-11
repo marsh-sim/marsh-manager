@@ -9,6 +9,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     Network
     QuickControls2
     Gui
+    Widgets
 )
 
 qt_standard_project_setup(REQUIRES 6.5)
@@ -32,6 +33,7 @@ qt_add_qml_module(appmarsh-manager
     QML_FILES src/HelpMenu.qml
     SOURCES src/networkdisplay.h src/networkdisplay.cpp
     QML_FILES src/NetworkView.qml
+    SOURCES src/logger.h src/logger.cpp
 )
 
 qt_add_resources(appmarsh-manager "app_text"
@@ -65,6 +67,7 @@ target_link_libraries(appmarsh-manager
     PRIVATE Qt6::Network
     PRIVATE Qt6::QuickControls2
     PRIVATE Qt6::Gui
+    PRIVATE Qt6::Widgets
 )
 
 include(GNUInstallDirs)

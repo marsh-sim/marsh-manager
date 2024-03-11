@@ -15,7 +15,6 @@ class Router : public QObject
     Q_OBJECT
 public:
     explicit Router(QObject *parent = nullptr);
-
     void setAppData(ApplicationData *appData);
 
     Q_PROPERTY(int listenPort READ listenPort CONSTANT)

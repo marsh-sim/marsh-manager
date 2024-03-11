@@ -2,6 +2,7 @@
 #define APPLICATIONDATA_H
 
 #include <QObject>
+#include "logger.h"
 #include "networkdisplay.h"
 #include "router.h"
 
@@ -15,16 +16,19 @@ public:
 
     Q_PROPERTY(Router* router READ router CONSTANT)
     Q_PROPERTY(NetworkDisplay *networkDisplay READ networkDisplay CONSTANT)
+    Q_PROPERTY(Logger *logger READ logger CONSTANT)
     Q_PROPERTY(QString licenseText READ licenseText CONSTANT)
 
     Router *router() const { return _router; }
     NetworkDisplay *networkDisplay() const { return _networkDisplay; }
+    Logger *logger() const { return _logger; }
     QString licenseText();
 
 signals:
 
 private:
     Router* _router;
+    Logger *_logger;
     NetworkDisplay *_networkDisplay;
 };
 

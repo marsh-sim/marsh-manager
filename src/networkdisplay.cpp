@@ -6,7 +6,7 @@
 
 NetworkDisplay::NetworkDisplay(QObject *parent)
     : QObject{parent}
-    , startTimestamp{Message::currentTime()}
+    , start_timestamp{Message::currentTime()}
 {
     _model = new QStandardItemModel(this);
 
@@ -32,7 +32,7 @@ void NetworkDisplay::addClient(ClientNode *client)
             .arg(client->system.toString(), client->component.toString()));
 
     root->appendRow({clientItem, updateItem, dataItem});
-    clientItems[client] = clientItem;
+    client_items[client] = clientItem;
 
     auto stateItem = new QStandardItem(name(ClientRow::State));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
@@ -66,7 +66,7 @@ void NetworkDisplay::clientStateChanged(ClientNode::State state)
     auto sender = qobject_cast<ClientNode *>(QObject::sender());
     Q_ASSERT_X(sender, "NetworkDisplay::clientStateChanged", "this signal must be sent by a client");
 
-    const auto clientItem = clientItems[sender];
+    const auto clientItem = client_items[sender];
     clientItem->setData(stateColor(state), Qt::DecorationRole);
 
     // update client interaction time
@@ -90,7 +90,7 @@ void NetworkDisplay::clientMessageReceived(Message message)
                "NetworkDisplay::clientMessageReceived",
                "this signal must be sent by a client");
 
-    const auto clientItem = clientItems[sender];
+    const auto clientItem = client_items[sender];
     const auto info = mavlink_get_message_info(&message.m);
 
     // update client interaction time
@@ -117,12 +117,12 @@ void NetworkDisplay::clientMessageReceived(Message message)
         created.push_back(new QStandardItem(message.id().toString()));
 
         // insert in order of message id
-        messageNameToId.insert(info->name, message.id());
+        message_name_to_id.insert(info->name, message.id());
         int insertRow = 0;
         for (int row = 0; row < receivedItem->rowCount(); ++row) {
             const auto item = receivedItem->child(row, index(Column::Name));
             if (message.id()
-                < messageNameToId.value(item->data(Qt::DisplayRole).toString(), MessageId(0)))
+                < message_name_to_id.value(item->data(Qt::DisplayRole).toString(), MessageId(0)))
                 break; // shouldn't increase past this row
             insertRow++;
         }
@@ -163,7 +163,7 @@ void NetworkDisplay::clientMessageReceived(Message message)
 
 QString NetworkDisplay::formatUpdateTime(qint64 timestamp)
 {
-    double seconds = (timestamp - startTimestamp) / 1e6;
+    double seconds = (timestamp - start_timestamp) / 1e6;
     return QString("%1:%2")
         .arg(static_cast<int>(std::floor(seconds / 60.0)), 2, 10, QChar('0'))
         .arg(QString("%1").arg(std::fmod(seconds, 60.0), 0, 'f', 3).rightJustified(6, '0'));
