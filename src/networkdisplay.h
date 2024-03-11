@@ -29,6 +29,8 @@ public:
 
     Q_PROPERTY(QStandardItemModel *model READ model CONSTANT)
 
+    Q_INVOKABLE QString formatUpdateTime(qint64 timestamp);
+
     QStandardItemModel *model() const { return _model; }
 
     void addClient(ClientNode *client);
@@ -48,7 +50,6 @@ private:
     QString name(ClientRow row);
     QString name(ClientNode::State state);
 
-    QString formatUpdateTime(qint64 timestamp);
     QVariant stateColor(ClientNode::State state);
     QVariant mavlinkData(const mavlink_field_info_t &field, const Message &message);
 

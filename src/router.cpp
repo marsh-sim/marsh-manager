@@ -5,6 +5,7 @@
 #include <QNetworkDatagram>
 #include "applicationdata.h"
 #include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
+#include "networkdisplay.h"
 #include <algorithm>
 
 Router::Router(QObject *parent)
@@ -12,7 +13,7 @@ Router::Router(QObject *parent)
 {
     udp_socket = new QUdpSocket(this);
     // FIXME: Should bind exclusively to this port (throw error if already used by another process)
-    udp_socket->bind(QHostAddress::LocalHost, 24400);
+    udp_socket->bind(QHostAddress::LocalHost, listenPort());
     connect(udp_socket, &QUdpSocket::readyRead, this, &Router::readPendingDatagrams);
 }
 

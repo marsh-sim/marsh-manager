@@ -31,6 +31,7 @@ qt_add_qml_module(appmarsh-manager
     SOURCES src/message.h src/message.cpp
     QML_FILES src/HelpMenu.qml
     SOURCES src/networkdisplay.h src/networkdisplay.cpp
+    QML_FILES src/NetworkView.qml
 )
 
 qt_add_resources(appmarsh-manager "app_text"

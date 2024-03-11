@@ -1,7 +1,9 @@
 import QtQuick
 import QtQuick.Controls.Fusion
+import QtQuick.Layouts
 
 ApplicationWindow {
+    id: rootWindow
     width: 800
     height: 600
     visible: true
@@ -11,42 +13,39 @@ ApplicationWindow {
         HelpMenu {}
     }
 
-    HorizontalHeaderView {
-        id: horizontalHeader
-        anchors.left: treeView.left
+    RowLayout {
+        id: statusBar
         anchors.top: parent.top
-        syncView: treeView
-        clip: true
-    }
-
-    TreeView {
-        id: treeView
         anchors.left: parent.left
-        anchors.top: horizontalHeader.bottom
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        clip: true
+        anchors.margins: 10
+        spacing: 10
 
-        model: appData.networkDisplay.model
+        Text {
+            text: qsTr("Listening on port ") + appData.router.listenPort
+            color: palette.text
+        }
 
-        delegate: TreeViewDelegate {
-            contentItem: Text {
-                text: model.display
-                color: model.decoration ? model.decoration : palette.text
-            }
+        Text {
+            id: currentTime
+            color: palette.text
 
-            onClicked: appData.networkDisplay.itemClicked(treeView.index(
-                                                              row, column))
-
-            TapHandler {
-                acceptedModifiers: Qt.ControlModifier
-                onTapped: {
-                    if (treeView.isExpanded(row))
-                        treeView.collapseRecursively(row)
-                    else
-                        treeView.expandRecursively(row)
+            Connections {
+                target: rootWindow
+                function onBeforeRendering() {
+                    const timestamp = (new Date).getTime() * 1000
+                    const text = appData.networkDisplay.formatUpdateTime(
+                                   timestamp)
+                    currentTime.text = qsTr("Current time: ") + text
                 }
             }
         }
+    }
+
+    NetworkView {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: statusBar.bottom
+        anchors.topMargin: 10
     }
 }
