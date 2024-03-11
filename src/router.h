@@ -6,12 +6,17 @@
 #include <QUdpSocket>
 #include "clientnode.h"
 #include "message.h"
+#include "networkdisplay.h"
+
+class ApplicationData;
 
 class Router : public QObject
 {
     Q_OBJECT
 public:
     explicit Router(QObject *parent = nullptr);
+
+    void setAppData(ApplicationData *appData);
 
 signals:
 
@@ -26,6 +31,8 @@ private:
 
     /// List of clients in order of connecting.
     QList<ClientNode *> clients;
+
+    ApplicationData *appData;
 };
 
 #endif // ROUTER_H
