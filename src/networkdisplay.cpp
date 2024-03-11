@@ -116,8 +116,18 @@ void NetworkDisplay::clientMessageReceived(Message message)
         created.push_back(new QStandardItem(""));
         created.push_back(new QStandardItem(message.id().toString()));
 
-        // TODO: insert sorted by message id
-        receivedItem->appendRow(created);
+        // insert in order of message id
+        messageNameToId.insert(info->name, message.id());
+        int insertRow = 0;
+        for (int row = 0; row < receivedItem->rowCount(); ++row) {
+            const auto item = receivedItem->child(row, index(Column::Name));
+            if (message.id()
+                < messageNameToId.value(item->data(Qt::DisplayRole).toString(), MessageId(0)))
+                break; // shouldn't increase past this row
+            insertRow++;
+        }
+
+        receivedItem->insertRow(insertRow, created);
         messageRow = created[0]->row();
     }
 

@@ -17,11 +17,13 @@ mav.srcSystem = 1  # default system
 mav.srcComponent = 26  # USER2
 print(f'Sending to {connection_string}')
 
-next_send = 0.0
-send_interval = 0.5
+heartbeat_next = 0.0
+heartbeat_interval = 0.5
+state_next = 0.0
+state_interval = 0.25
 
 while True:
-    if time() >= next_send:
+    if time() >= heartbeat_next:
         mav.heartbeat_send(
             mavlink.MAV_TYPE_GENERIC,
             mavlink.MAV_AUTOPILOT_INVALID,
@@ -29,4 +31,16 @@ while True:
             0,
             mavlink.MAV_STATE_ACTIVE
         )
-        next_send = time() + send_interval
+        heartbeat_next = time() + heartbeat_interval
+    if time() >= state_next:
+        mav.sim_state_send(
+            1, 0, 0, 0,  # attitude quaternion
+            0, 0, 0,  # attitude Euler angles, roll, pitch, yaw
+            0, 0, 9.81,  # local acceleration X, Y, Z
+            0, 0, 0,  # local angular speed X, Y, Z
+            0, 0, 0,  # latitude, longitude, altitude
+            0, 0,  # position standard deviation horizontal, vertical
+            0, 0, 0,  # velocity N, E, D
+            0, 0,  # lat, lon as degrees * 10^7
+        )
+        state_next = time() + state_interval
