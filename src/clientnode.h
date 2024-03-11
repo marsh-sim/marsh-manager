@@ -29,6 +29,8 @@ public:
         {
             return address == other.address && port == other.port;
         }
+
+        QString toString();
     };
     SystemId system;
     ComponentId component;
@@ -54,9 +56,11 @@ public:
     QMap<MessageId, Message> last_published_message;
     QSet<MessageId> subscribed_messages;
     quint8 sending_sequence_number = 0;
+
 signals:
     void stateChanged(State state);
     void shadowedChanged(bool shadowed);
+    void messageReceived(Message message);
 
 private slots:
     void heartbeatTimerElapsed(void);

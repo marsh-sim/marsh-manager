@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QMetaEnum>
 #include <QNetworkDatagram>
+#include "applicationdata.h"
 #include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
 #include <algorithm>
 
@@ -13,6 +14,11 @@ Router::Router(QObject *parent)
     // FIXME: Should bind exclusively to this port (throw error if already used by another process)
     udp_socket->bind(QHostAddress::LocalHost, 24400);
     connect(udp_socket, &QUdpSocket::readyRead, this, &Router::readPendingDatagrams);
+}
+
+void Router::setAppData(ApplicationData *appData)
+{
+    this->appData = appData;
 }
 
 void Router::readPendingDatagrams()
@@ -37,19 +43,6 @@ void Router::readPendingDatagrams()
 
 void Router::clientStateChanged(ClientNode::State state)
 {
-    {
-        // HACK: getting sender is not recommended, but it's just for debug here
-        auto sender = qobject_cast<ClientNode *>(QObject::sender());
-        auto metaEnum = QMetaEnum::fromType<ClientNode::State>();
-        if (sender) {
-            qDebug().noquote() << QString("%1:%2")
-                                      .arg(sender->connection().address.toString())
-                                      .arg(sender->connection().port)
-                               << "changed state to"
-                               << metaEnum.valueToKey(static_cast<int>(state));
-        }
-    }
-
     if (state == ClientNode::State::TimedOut) {
         // some client previously shadowed may be the first component now
 
@@ -75,8 +68,8 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
 {
     const auto info = mavlink_get_message_info(&message.m);
     auto deb = qDebug().noquote(); // reuse the same debug stream to print to a single line
-    deb << QString("%1:%2").arg(connection.address.toString()).arg(connection.port)
-        << QString("%1:%2").arg(message.m.sysid).arg(message.m.compid) << info->name;
+    deb << connection.toString() << QString("%1:%2").arg(message.m.sysid).arg(message.m.compid)
+        << info->name;
 
     // get the connected client
     ClientNode *client = nullptr;
@@ -104,6 +97,7 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
                                                  : ClientNode::State::Shadowed);
             clients.push_back(client);
             connect(client, &ClientNode::stateChanged, this, &Router::clientStateChanged);
+            appData->networkDisplay()->addClient(client);
 
             if (syscomp_free)
                 deb << "registered a new client";

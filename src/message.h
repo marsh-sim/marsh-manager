@@ -2,8 +2,10 @@
 #define MESSAGE_H
 
 #include <QElapsedTimer>
+#include <QString>
 #include "mavlink/mavlink_types.h"
 #include <optional>
+#include <string>
 
 class SystemId
 {
@@ -14,6 +16,7 @@ public:
 
     bool operator==(const SystemId &other) const { return _value == other._value; }
     bool operator<(const SystemId &other) const { return _value < other._value; }
+    QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const SystemId &id);
 
 private:
@@ -30,6 +33,7 @@ public:
 
     bool operator==(const ComponentId &other) const { return _value == other._value; }
     bool operator<(const ComponentId &other) const { return _value < other._value; }
+    QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const ComponentId &id);
 
 private:
@@ -46,6 +50,7 @@ public:
 
     bool operator==(const MessageId &other) const { return _value == other._value; }
     bool operator<(const MessageId &other) const { return _value < other._value; }
+    QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const MessageId &id);
 
 private:

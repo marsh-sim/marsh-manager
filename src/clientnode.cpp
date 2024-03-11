@@ -39,10 +39,17 @@ void ClientNode::receiveMessage(Message message)
 
         heartbeat_timer->start();
     }
+
+    emit messageReceived(message);
 }
 
 void ClientNode::heartbeatTimerElapsed()
 {
     _state = State::TimedOut;
     emit stateChanged(_state);
+}
+
+QString ClientNode::Connection::toString()
+{
+    return QString("%1:%2").arg(address.toString()).arg(port);
 }
