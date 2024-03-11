@@ -7,8 +7,11 @@ ApplicationData::ApplicationData(QObject *parent)
 {
     _router = new Router(this);
     _networkDisplay = new NetworkDisplay(this);
+    _logger = new Logger(this);
 
+    // pass this reference again when all children are constructed
     _router->setAppData(this);
+    _logger->setAppData(this);
 }
 
 QString ApplicationData::licenseText()
