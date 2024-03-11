@@ -6,6 +6,7 @@ ApplicationData::ApplicationData(QObject *parent)
     : QObject{parent}
 {
     _router = new Router(this);
+    _networkDisplay = new NetworkDisplay(this);
 }
 
 QString ApplicationData::licenseText()

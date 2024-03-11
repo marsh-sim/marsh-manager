@@ -4,7 +4,12 @@ project(marsh-manager VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick)
+find_package(Qt6 6.5 REQUIRED COMPONENTS
+    Quick
+    Network
+    QuickControls2
+    Gui
+)
 
 qt_standard_project_setup(REQUIRES 6.5)
 
@@ -25,6 +30,7 @@ qt_add_qml_module(appmarsh-manager
     SOURCES src/clientnode.h src/clientnode.cpp
     SOURCES src/message.h src/message.cpp
     QML_FILES src/HelpMenu.qml
+    SOURCES src/networkdisplay.h src/networkdisplay.cpp
 )
 
 qt_add_resources(appmarsh-manager "app_text"
@@ -44,11 +50,6 @@ set_target_properties(appmarsh-manager PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-find_package(Qt6 REQUIRED COMPONENTS
-    Network
-    QuickControls2
-)
-
 target_include_directories(appmarsh-manager
     PRIVATE modules
 )
@@ -62,6 +63,7 @@ target_link_libraries(appmarsh-manager
     PRIVATE Qt6::Quick
     PRIVATE Qt6::Network
     PRIVATE Qt6::QuickControls2
+    PRIVATE Qt6::Gui
 )
 
 include(GNUInstallDirs)
