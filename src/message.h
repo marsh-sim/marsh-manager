@@ -5,7 +5,6 @@
 #include <QString>
 #include "mavlink/mavlink_types.h"
 #include <optional>
-#include <string>
 
 class SystemId
 {

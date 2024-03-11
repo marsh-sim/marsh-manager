@@ -4,12 +4,27 @@
 #include <QObject>
 #include <QStandardItemModel>
 #include "clientnode.h"
-#include <optional>
 
+/// Translates application types into standard Qt model class
 class NetworkDisplay : public QObject
 {
     Q_OBJECT
 public:
+    /// Columns defined for each item
+    enum class Column : int {
+        Name,
+        Updated,
+        Data,
+    };
+    Q_ENUM(Column)
+
+    /// Rows present on each client
+    enum class ClientRow : int {
+        State,
+        ReceivedMessages,
+    };
+    Q_ENUM(ClientRow)
+
     explicit NetworkDisplay(QObject *parent = nullptr);
 
     Q_PROPERTY(QStandardItemModel *model READ model CONSTANT)
@@ -27,9 +42,15 @@ private slots:
     void clientMessageReceived(Message message);
 
 private:
+    int index(Column column);
+    int index(ClientRow row);
+    QString name(Column column);
+    QString name(ClientRow row);
+    QString name(ClientNode::State state);
+
     QString formatUpdateTime(qint64 timestamp);
-    QString stateName(ClientNode::State state);
     QVariant stateColor(ClientNode::State state);
+    QVariant mavlinkData(const mavlink_field_info_t &field, const Message &message);
 
     QStandardItemModel *_model;
     const qint64 startTimestamp;
