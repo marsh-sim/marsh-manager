@@ -4,9 +4,9 @@
 #include <QElapsedTimer>
 #include <QObject>
 #include <QUdpSocket>
+#include <QtQmlIntegration>
 #include "clientnode.h"
 #include "message.h"
-#include "networkdisplay.h"
 
 class ApplicationData;
 
@@ -17,6 +17,10 @@ public:
     explicit Router(QObject *parent = nullptr);
 
     void setAppData(ApplicationData *appData);
+
+    Q_PROPERTY(int listenPort READ listenPort CONSTANT)
+
+    int listenPort() const { return 24400; }
 
 signals:
 
