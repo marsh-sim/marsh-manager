@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QStandardItemModel>
 #include "clientnode.h"
+#include <optional>
 
 class NetworkDisplay : public QObject
 {
@@ -28,6 +29,7 @@ private slots:
 private:
     QString formatUpdateTime(qint64 timestamp);
     QString stateName(ClientNode::State state);
+    QVariant stateColor(ClientNode::State state);
 
     QStandardItemModel *_model;
     const qint64 startTimestamp;

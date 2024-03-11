@@ -16,16 +16,21 @@ void NetworkDisplay::addClient(ClientNode *client)
     auto root = _model->invisibleRootItem();
     auto clientItem = new QStandardItem(
         QString("Client at %1").arg(client->connection().toString()));
+    clientItem->setData(stateColor(client->state()), Qt::DecorationRole);
+
     auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
+
     auto dataItem = new QStandardItem(
         QString("System %1 Component %2")
             .arg(client->system.toString(), client->component.toString()));
+
     root->appendRow({clientItem, updateItem, dataItem});
     clientItems[client] = clientItem;
 
     auto stateItem = new QStandardItem(QString("state"));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
     dataItem = new QStandardItem(stateName(client->state()));
+    dataItem->setData(stateColor(client->state()), Qt::DecorationRole);
     clientItem->appendRow({stateItem, updateItem, dataItem});
 
     connect(client, &ClientNode::stateChanged, this, &NetworkDisplay::clientStateChanged);
@@ -51,12 +56,14 @@ void NetworkDisplay::clientStateChanged(ClientNode::State state)
 
     const auto clientItem = clientItems[sender];
     Q_ASSERT(clientItem->child(0, 0)->data(Qt::DisplayRole) == QVariant(QString("state")));
+    clientItem->setData(stateColor(state), Qt::DecorationRole);
 
     const auto stateUpdated = clientItem->child(0, 1);
     stateUpdated->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
 
     const auto stateData = clientItem->child(0, 2);
     stateData->setData(stateName(state), Qt::DisplayRole);
+    stateData->setData(stateColor(state), Qt::DecorationRole);
 }
 
 void NetworkDisplay::clientMessageReceived(Message message)
@@ -76,4 +83,16 @@ QString NetworkDisplay::stateName(ClientNode::State state)
 {
     auto metaEnum = QMetaEnum::fromType<ClientNode::State>();
     return QString(metaEnum.valueToKey(static_cast<int>(state)));
+}
+
+QVariant NetworkDisplay::stateColor(ClientNode::State state)
+{
+    switch (state) {
+    case ClientNode::State::Connected:
+        return {};
+    case ClientNode::State::Shadowed:
+        return QColor(63, 63, 191);
+    case ClientNode::State::TimedOut:
+        return QColor(127, 127, 127);
+    }
 }
