@@ -23,6 +23,7 @@ public:
     int listenPort() const { return 24400; }
 
 signals:
+    void messageReceived(Message message);
 
 private slots:
     void readPendingDatagrams();

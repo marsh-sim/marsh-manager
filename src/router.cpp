@@ -67,10 +67,12 @@ void Router::clientStateChanged(ClientNode::State state)
 
 void Router::receiveMessage(ClientNode::Connection connection, Message message)
 {
-    const auto info = mavlink_get_message_info(&message.m);
-    auto deb = qDebug().noquote(); // reuse the same debug stream to print to a single line
-    deb << connection.toString() << QString("%1:%2").arg(message.m.sysid).arg(message.m.compid)
-        << info->name;
+    const auto messageDebug = [&connection, &message]() {
+        auto deb = qDebug().noquote(); // reuse the same debug stream to print to a single line
+        const auto info = mavlink_get_message_info(&message.m);
+        return deb << connection.toString()
+                   << QString("%1:%2").arg(message.m.sysid).arg(message.m.compid) << info->name;
+    };
 
     // get the connected client
     ClientNode *client = nullptr;
@@ -101,19 +103,24 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
             appData->networkDisplay()->addClient(client);
 
             if (syscomp_free)
-                deb << "registered a new client";
+                messageDebug() << "registered a new client";
             else
-                deb << "another client for component" << message.m.compid << "in system"
-                    << message.m.sysid;
+                messageDebug() << "another client for component" << message.m.compid << "in system"
+                               << message.m.sysid;
         }
     }
     if (!client) {
-        deb << "message from unregistered client, send HEARTBEAT first";
+        messageDebug() << "message from unregistered client, send HEARTBEAT first";
         return;
     }
 
-    client->receiveMessage(message);
+    client->receiveMessage(message); // always process the message in that client
+    if (client->state() != ClientNode::State::Connected)
+        return; // allow only valid clients to affect any external state
 
+    emit messageReceived(message);
+
+    // broadcast the message to every subscriber
     QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
     for (const auto listener : clients) {
         if (listener->subscribed_messages.contains(message.id())) {

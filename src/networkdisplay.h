@@ -57,6 +57,7 @@ private:
     const qint64 startTimestamp;
 
     QMap<ClientNode *, QStandardItem *> clientItems;
+    QMap<QString, MessageId> messageNameToId;
 };
 
 #endif // NETWORKMODEL_H
