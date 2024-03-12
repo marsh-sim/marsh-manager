@@ -54,10 +54,10 @@ private:
     QVariant mavlinkData(const mavlink_field_info_t &field, const Message &message);
 
     QStandardItemModel *_model;
-    const qint64 start_timestamp;
+    const qint64 startTimestamp;
 
-    QMap<ClientNode *, QStandardItem *> client_items;
-    QMap<QString, MessageId> message_name_to_id;
+    QMap<ClientNode *, QStandardItem *> clientItems;
+    QMap<QString, MessageId> messageNameToId;
 };
 
 #endif // NETWORKMODEL_H

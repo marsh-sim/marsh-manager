@@ -17,11 +17,17 @@ public:
     Q_PROPERTY(Router* router READ router CONSTANT)
     Q_PROPERTY(NetworkDisplay *networkDisplay READ networkDisplay CONSTANT)
     Q_PROPERTY(Logger *logger READ logger CONSTANT)
+
+    Q_PROPERTY(quint8 localSystemId READ localSystemId CONSTANT)
+    Q_PROPERTY(quint8 localComponentId READ localComponentId CONSTANT)
     Q_PROPERTY(QString licenseText READ licenseText CONSTANT)
 
     Router *router() const { return _router; }
     NetworkDisplay *networkDisplay() const { return _networkDisplay; }
     Logger *logger() const { return _logger; }
+
+    quint8 localSystemId() const { return 1; }
+    quint8 localComponentId() const { return 25; }
     QString licenseText();
 
 signals:

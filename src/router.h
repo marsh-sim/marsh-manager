@@ -31,7 +31,7 @@ private slots:
 private:
     void receiveMessage(ClientNode::Connection connection, Message message);
 
-    QUdpSocket *udp_socket = nullptr;
+    QUdpSocket *udpSocket = nullptr;
 
     /// List of clients in order of connecting.
     QList<ClientNode *> clients;

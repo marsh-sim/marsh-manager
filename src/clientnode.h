@@ -69,9 +69,9 @@ private:
     Connection _connection;
     State _state;
     /// This is the first *currently* connected client with this system id and component id
-    bool first_sysid_compid;
+    bool firstSysidCompid;
 
-    QTimer *heartbeat_timer = nullptr;
+    QTimer *heartbeatTimer = nullptr;
 };
 
 #endif // CLIENTNODE_H

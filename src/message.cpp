@@ -4,16 +4,16 @@
 
 int64_t Message::currentTime()
 {
-    if (!Message::start_timestamp || !Message::running_timer) {
-        start_timestamp = QDateTime::currentMSecsSinceEpoch() * 1000;
-        running_timer = QElapsedTimer{};
-        running_timer->start();
+    if (!Message::startTimestamp || !Message::runningTimer) {
+        startTimestamp = QDateTime::currentMSecsSinceEpoch() * 1000;
+        runningTimer = QElapsedTimer{};
+        runningTimer->start();
     }
-    return *start_timestamp + running_timer->nsecsElapsed() / 1000;
+    return *startTimestamp + runningTimer->nsecsElapsed() / 1000;
 }
 
-std::optional<int64_t> Message::start_timestamp{};
-std::optional<QElapsedTimer> Message::running_timer{};
+std::optional<int64_t> Message::startTimestamp{};
+std::optional<QElapsedTimer> Message::runningTimer{};
 
 int qHash(const SystemId &id)
 {
