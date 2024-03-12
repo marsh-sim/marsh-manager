@@ -11,10 +11,10 @@
 Router::Router(QObject *parent)
     : QObject{parent}
 {
-    udp_socket = new QUdpSocket(this);
+    udpSocket = new QUdpSocket(this);
     // FIXME: Should bind exclusively to this port (throw error if already used by another process)
-    udp_socket->bind(QHostAddress::LocalHost, listenPort());
-    connect(udp_socket, &QUdpSocket::readyRead, this, &Router::readPendingDatagrams);
+    udpSocket->bind(QHostAddress::LocalHost, listenPort());
+    connect(udpSocket, &QUdpSocket::readyRead, this, &Router::readPendingDatagrams);
 }
 
 void Router::setAppData(ApplicationData *appData)
@@ -24,8 +24,8 @@ void Router::setAppData(ApplicationData *appData)
 
 void Router::readPendingDatagrams()
 {
-    while (udp_socket->hasPendingDatagrams()) {
-        auto datagram = udp_socket->receiveDatagram();
+    while (udpSocket->hasPendingDatagrams()) {
+        auto datagram = udpSocket->receiveDatagram();
         for (qsizetype i = 0; i < datagram.data().size(); i++) { // iterators not recommended for QByteArray
             mavlink_message_t message_m;
             mavlink_status_t parser_status;
@@ -127,7 +127,7 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
             message.m.seq = listener->sending_sequence_number++;
             const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(),
                                                            &message.m);
-            udp_socket->writeDatagram(send_buffer,
+            udpSocket->writeDatagram(send_buffer,
                                       length,
                                       listener->connection().address,
                                       listener->connection().port);

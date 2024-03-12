@@ -75,6 +75,12 @@ ApplicationWindow {
                     appData.logger.outputDir = appData.logger.getDirectoryWithDialog()
                 }
             }
+
+            TextField {
+                placeholderText: qsTr("File comment")
+                maximumLength: 50 // maximum for STATUSTEXT message
+                onTextChanged: appData.logger.fileComment = text
+            }
         }
     }
 

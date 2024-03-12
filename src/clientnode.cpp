@@ -9,21 +9,21 @@ ClientNode::ClientNode(
     , component{component}
     , _state{state}
 {
-    first_sysid_compid = state == State::Shadowed;
+    firstSysidCompid = state == State::Shadowed;
 
-    heartbeat_timer = new QTimer(this);
-    heartbeat_timer->setSingleShot(true);
+    heartbeatTimer = new QTimer(this);
+    heartbeatTimer->setSingleShot(true);
     // expect at least 1 Hz and allow max five messages to be lost
-    heartbeat_timer->setInterval(5000);
-    heartbeat_timer->start();
-    connect(heartbeat_timer, &QTimer::timeout, this, &ClientNode::heartbeatTimerElapsed);
+    heartbeatTimer->setInterval(5000);
+    heartbeatTimer->start();
+    connect(heartbeatTimer, &QTimer::timeout, this, &ClientNode::heartbeatTimerElapsed);
 }
 
 void ClientNode::setShadowed(bool shadowed)
 {
-    first_sysid_compid = shadowed;
+    firstSysidCompid = shadowed;
     if (_state == State::Connected || _state == State::Shadowed) {
-        _state = first_sysid_compid ? State::Shadowed : State::Connected;
+        _state = firstSysidCompid ? State::Shadowed : State::Connected;
         emit stateChanged(_state);
     }
     emit shadowedChanged(this->shadowed());
@@ -37,7 +37,7 @@ void ClientNode::receiveMessage(Message message)
         mavlink_heartbeat_t heartbeat;
         mavlink_msg_heartbeat_decode(&message.m, &heartbeat);
 
-        heartbeat_timer->start();
+        heartbeatTimer->start();
     }
 
     emit messageReceived(message);

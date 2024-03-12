@@ -76,9 +76,9 @@ struct Message
 
 private:
     /// Singleton offset since epoch
-    static std::optional<int64_t> start_timestamp;
+    static std::optional<int64_t> startTimestamp;
     /// Singleton timer to get better accuracy than system clock
-    static std::optional<QElapsedTimer> running_timer;
+    static std::optional<QElapsedTimer> runningTimer;
 };
 
 #endif // MESSAGE_H
