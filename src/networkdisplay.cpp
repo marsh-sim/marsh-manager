@@ -67,7 +67,12 @@ void NetworkDisplay::clientStateChanged(ClientNode::State state)
     Q_ASSERT_X(sender, "NetworkDisplay::clientStateChanged", "this signal must be sent by a client");
 
     const auto clientItem = clientItems[sender];
-    clientItem->setData(stateColor(state), Qt::DecorationRole);
+    // update color of whole client row
+    for (int col = 0; col < _model->invisibleRootItem()->columnCount(); ++col) {
+        _model->invisibleRootItem()
+            ->child(clientItem->row(), col)
+            ->setData(stateColor(state), Qt::DecorationRole);
+    }
 
     // update client interaction time
     _model->invisibleRootItem()
