@@ -59,13 +59,21 @@ ApplicationWindow {
             Button {
                 text: qsTr("Save data")
                 enabled: !appData.logger.savingNow
-                onClicked: appData.logger.savingNow = true
+                onClicked: {
+                    appData.logger.savingNow = true
+                    if (saveLimitedTime.checked) {
+                        saveLimitTimer.start()
+                    }
+                }
             }
 
             Button {
                 text: qsTr("Stop saving")
                 enabled: appData.logger.savingNow
-                onClicked: appData.logger.savingNow = false
+                onClicked: {
+                    appData.logger.savingNow = false
+                    saveLimitTimer.stop()
+                }
             }
 
             Button {
@@ -80,15 +88,47 @@ ApplicationWindow {
                 placeholderText: qsTr("File comment")
                 maximumLength: 50 // maximum for STATUSTEXT message
                 onTextChanged: appData.logger.fileComment = text
+                enabled: !appData.logger.savingNow
+            }
+
+            CheckBox {
+                id: saveLimitedTime
+                text: qsTr("Save limited time")
+                enabled: !appData.logger.savingNow
+            }
+        }
+
+        RowLayout {
+            visible: saveLimitedTime.checked
+
+            Text {
+                text: qsTr("Save time (in seconds):")
+                enabled: !appData.logger.savingNow
+                color: palette.text
+            }
+
+            TextField {
+                id: saveTimeSeconds
+                text: "60"
+                enabled: !appData.logger.savingNow
+                validator: IntValidator {
+                    bottom: 0
+                }
+            }
+
+            Timer {
+                id: saveLimitTimer
+                interval: parseInt(saveTimeSeconds.text) * 1000
+                onTriggered: appData.logger.savingNow = false
             }
         }
     }
 
     NetworkView {
+        anchors.top: statusBar.bottom
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: statusBar.bottom
         anchors.topMargin: 10
     }
 }
