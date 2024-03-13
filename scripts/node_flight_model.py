@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
+from os import path
+import sys
 from time import sleep, time
 
-import pymavlink.dialects.v20.common as mavlink
 from pymavlink import mavutil
+
+# add repository root path to import local module regardless of location
+root_path = path.abspath(path.join(path.dirname(__file__), '..'))
+sys.path.insert(1, root_path)
+try:
+    # fmt: off - don't move import to top of file
+    import dist.all_marsh as mavlink
+    # fmt: on
+except ImportError:
+    print('could not import generated dialect, run update_mavlink.py first')
 
 parser = ArgumentParser()
 parser.add_argument('-m', '--manager',
@@ -14,7 +25,7 @@ args = parser.parse_args()
 connection_string = f'udpout:{args.manager}:24400'
 mav = mavlink.MAVLink(mavutil.mavlink_connection(connection_string))
 mav.srcSystem = 1  # default system
-mav.srcComponent = 26  # USER2
+mav.srcComponent = mavlink.MARSH_COMP_ID_FLIGHT_MODEL
 print(f'Sending to {connection_string}')
 
 heartbeat_next = 0.0
