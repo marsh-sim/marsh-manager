@@ -7,11 +7,9 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    app.setApplicationVersion(APP_VERSION);
 
     ApplicationData appData;
-
-    // FIXME: This causes light palette on Windows (but dark palette is more broken)
-    QQuickStyle::setStyle("fusion");
 
     QQmlApplicationEngine engine;
     QObject::connect(

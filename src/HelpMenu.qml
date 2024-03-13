@@ -10,7 +10,7 @@ Menu {
                                        "https://marsh-sim.github.io/manager.html")
 
     MenuItem {
-        text: qsTr("Online help")
+        text: qsTr("Online documentation")
         onTriggered: {
             if (!Qt.openUrlExternally(helpUrl)) {
                 onlineHelpFail.visible = true
@@ -43,8 +43,7 @@ Menu {
     MessageDialog {
         id: appInfo
         buttons: MessageDialog.Ok
-        text: "TODO: Application version
-Copyright © 2024 Marek S. Łukasiewicz"
+        text: `MARSH Manager\nVersion ${Qt.application.version}\nBuild type ${appData.buildType}\nGit commit no. ${appData.buildGitCommitCount} ref ${appData.buildGitHash}\n\nCopyright © 2024 Marek S. Łukasiewicz`
         informativeText: qsTr("
 Developed at Department of Aerospace Science and Technology (DAER) of Politecnico di Milano
 
@@ -52,7 +51,8 @@ This program is free software: you can redistribute it and/or modify it under th
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-A copy of the GNU General Public License is embedded in this program. Alternatively, see <https://www.gnu.org/licenses/>")
+A copy of the GNU General Public License is embedded in this program. Alternatively, see <https://www.gnu.org/licenses/>
+.")
     }
 
     MessageDialog {
@@ -62,7 +62,7 @@ A copy of the GNU General Public License is embedded in this program. Alternativ
         informativeText: qsTr("
 The Qt Framework, https://qt.io/ (GPLv3)
 MAVLink message definitons, https://mavlink.io/ (MIT)
-")
+.")
     }
 
     Window {
@@ -72,7 +72,6 @@ MAVLink message definitons, https://mavlink.io/ (MIT)
         title: qsTr("GNU GPLv3 License")
         ScrollView {
             anchors.fill: parent
-            contentWidth: availableWidth
             Text {
                 id: licenseText
                 font.pointSize: 12

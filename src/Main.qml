@@ -7,7 +7,7 @@ ApplicationWindow {
     width: 800
     height: 600
     visible: true
-    title: qsTr("MARSH Manager")
+    title: "MARSH Manager v" + Qt.application.version
 
     menuBar: MenuBar {
         HelpMenu {}
