@@ -85,10 +85,11 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
         } else if (message.m.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
             // only register clients when receiving heartbeat
 
-            // look for other clients with the same system and component id
+            // look for already connected clients with the same system and component id
             it = std::find_if(clients.cbegin(), clients.cend(), [&](const ClientNode *c) {
                 return c->system == message.senderSystem()
-                       && c->component == message.senderComponent();
+                       && c->component == message.senderComponent()
+                       && c->state() == ClientNode::State::Connected;
             });
             bool syscomp_free = it == std::end(clients);
 
