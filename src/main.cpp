@@ -9,6 +9,10 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     app.setApplicationVersion(APP_VERSION);
 
+    QCommandLineParser parser;
+    parser.addVersionOption();
+    parser.process(app);
+
     ApplicationData appData;
 
     QQmlApplicationEngine engine;

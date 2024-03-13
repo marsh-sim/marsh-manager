@@ -88,7 +88,8 @@ target_compile_definitions(
   # add git commit number to Debug build version
   PRIVATE
     APP_VERSION="${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}$<$<CONFIG:Debug>:+${PROJECT_VERSION_TWEAK}>"
-)
+  # suppress the "QML debugging is enabled..." warning
+  PRIVATE QT_QML_DEBUG_NO_WARNING=1)
 
 target_link_libraries(
   appmarsh-manager
