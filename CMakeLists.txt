@@ -68,7 +68,15 @@ set_target_properties(
              MACOSX_BUNDLE TRUE
              WIN32_EXECUTABLE TRUE)
 
-target_include_directories(appmarsh-manager PRIVATE modules)
+if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/modules/mavlink/pymavlink/setup.py)
+    message(FATAL_ERROR "Some dependencies missing, run: git submodule update --init --recursive")
+endif()
+
+if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/include/mavlink/all/mavlink.h)
+    message(FATAL_ERROR "MAVLink library missing, run: python scripts/update_mavlink.py")
+endif()
+
+target_include_directories(appmarsh-manager PRIVATE include)
 
 # get the latest abbreviated commit hash
 execute_process(
