@@ -7,7 +7,7 @@ Menu {
     title: qsTr("Help")
 
     readonly property url helpUrl: Qt.url(
-                                       "https://marsh-sim.github.io/manager.html")
+                                       "https://marsh-sim.github.io/manager/")
 
     MenuItem {
         text: qsTr("Online documentation")

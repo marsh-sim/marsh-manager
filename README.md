@@ -2,7 +2,7 @@
 
 Central application for [MARSH-Sim](https://github.com/marsh-sim)
 
-For documentation, see [MARSH Documentation - MARSH Manager](https://marsh-sim.github.io/manager.html)
+For documentation, see [MARSH Documentation - MARSH Manager](https://marsh-sim.github.io/manager/)
 
 ## Installation
 
