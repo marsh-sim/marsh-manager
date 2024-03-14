@@ -1,5 +1,6 @@
 #include "logger.h"
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QtEndian>
 #include "applicationdata.h"
 #include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
@@ -7,8 +8,14 @@
 Logger::Logger(QObject *parent)
     : QObject{parent}
 {
-    _outputDir = QDir::current();
-    _outputDir.cd("marsh-logs");
+    _outputDir = QDir::home();
+    const QString dirName = "marsh-logs";
+    if (!_outputDir.exists(dirName) && !_outputDir.mkdir(dirName)) {
+        QMessageBox msgBox;
+        msgBox.setText("Could not create output directory");
+        msgBox.exec();
+    }
+    _outputDir.cd(dirName);
 }
 
 void Logger::setAppData(ApplicationData *appData)
@@ -43,10 +50,6 @@ void Logger::setSavingNow(bool saving)
         return; // do nothing on repeated calls
 
     if (saving) {
-        if (!_outputDir.exists()) {
-            Q_ASSERT(_outputDir.mkpath("."));
-        }
-
         const auto dateTime = QDateTime::fromMSecsSinceEpoch(Message::currentTime() / 1000);
         outputFile = new QFile(_outputDir.filePath(formatFilename(dateTime)), this);
 
