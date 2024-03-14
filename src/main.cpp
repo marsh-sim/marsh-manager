@@ -1,9 +1,6 @@
 #include <QApplication>
-#include <QPalette>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QQuickStyle>
-#include <QStyleFactory>
 #include "appearanceutils.h"
 #include "applicationdata.h"
 
