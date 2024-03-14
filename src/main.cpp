@@ -1,7 +1,10 @@
 #include <QApplication>
+#include <QPalette>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
+#include <QStyleFactory>
+#include "appearanceutils.h"
 #include "applicationdata.h"
 
 int main(int argc, char *argv[])
@@ -14,6 +17,10 @@ int main(int argc, char *argv[])
     parser.process(app);
 
     ApplicationData appData;
+
+#ifdef Q_OS_WIN
+    AppearanceUtils::fixWindowsPalette(&app);
+#endif
 
     QQmlApplicationEngine engine;
     QObject::connect(

@@ -52,7 +52,10 @@ qt_add_qml_module(
   src/NetworkView.qml
   SOURCES
   src/logger.h
-  src/logger.cpp)
+  src/logger.cpp
+  SOURCES
+  src/appearanceutils.h
+  src/appearanceutils.cpp)
 
 qt_add_resources(appmarsh-manager "app_text" PREFIX "/" FILES LICENSE.txt)
 
@@ -69,11 +72,15 @@ set_target_properties(
              WIN32_EXECUTABLE TRUE)
 
 if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/modules/mavlink/pymavlink/setup.py)
-    message(FATAL_ERROR "Some dependencies missing, run: git submodule update --init --recursive")
+  message(
+    FATAL_ERROR
+      "Some dependencies missing, run: git submodule update --init --recursive")
 endif()
 
 if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/include/mavlink/all/mavlink.h)
-    message(FATAL_ERROR "MAVLink library missing, run: python scripts/update_mavlink.py")
+  message(
+    FATAL_ERROR "MAVLink library missing, run: python scripts/update_mavlink.py"
+  )
 endif()
 
 target_include_directories(appmarsh-manager PRIVATE include)
