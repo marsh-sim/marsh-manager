@@ -53,7 +53,8 @@ void Logger::setSavingNow(bool saving)
         const auto dateTime = QDateTime::fromMSecsSinceEpoch(Message::currentTime() / 1000);
         outputFile = new QFile(_outputDir.filePath(formatFilename(dateTime)), this);
 
-        Q_ASSERT(outputFile->open(QIODevice::ReadWrite));
+        Q_ASSERT(outputFile->open(QIODevice::WriteOnly));
+        _bytesWritten = 0;
 
         if (_fileComment.size() > 0) {
             // write the file comment as the very first message
@@ -83,6 +84,7 @@ void Logger::setSavingNow(bool saving)
 
     emit savingNowChanged(savingNow());
     emit outputPathChanged(outputPath());
+    emit bytesWrittenChanged(bytesWritten());
 }
 
 void Logger::setOutputDir(QString dir)
@@ -106,6 +108,9 @@ void Logger::receiveMessage(Message message)
 
     const auto length = mavlink_msg_to_send_buffer((quint8 *) write_buffer.data(), &message.m);
     outputFile->write(write_buffer, length);
+    *_bytesWritten += length;
+
+    emit bytesWrittenChanged(bytesWritten());
 }
 
 QString Logger::formatFilename(std::optional<QDateTime> datetime) const
@@ -125,6 +130,14 @@ QString Logger::formatFilename(std::optional<QDateTime> datetime) const
 QString Logger::fileComment() const
 {
     return _fileComment;
+}
+
+double Logger::bytesWritten() const
+{
+    if (_bytesWritten)
+        return *_bytesWritten;
+    else
+        return qQNaN();
 }
 
 void Logger::setFileComment(const QString &newFileComment)

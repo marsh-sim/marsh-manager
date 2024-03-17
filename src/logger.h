@@ -20,6 +20,7 @@ public:
     Q_PROPERTY(QString outputPath READ outputPath NOTIFY outputPathChanged FINAL)
     Q_PROPERTY(
         QString fileComment READ fileComment WRITE setFileComment NOTIFY fileCommentChanged FINAL)
+    Q_PROPERTY(double bytesWritten READ bytesWritten NOTIFY bytesWrittenChanged FINAL)
 
     Q_INVOKABLE QString getDirectoryWithDialog();
 
@@ -27,6 +28,7 @@ public:
     QString outputDir() const;
     QString outputPath() const;
     QString fileComment() const;
+    double bytesWritten() const; ///< property is double to pass NaN to QML when no file was opened
 
     void setSavingNow(bool saving);
     void setOutputDir(QString dir);
@@ -37,6 +39,7 @@ signals:
     void outputDirChanged(QString dir);
     void outputPathChanged(QString path);
     void fileCommentChanged(QString fileComment);
+    void bytesWrittenChanged(double written);
 
 private slots:
     void receiveMessage(Message message);
@@ -48,6 +51,7 @@ private:
     QDir _outputDir;
     QFile *outputFile = nullptr;
     QString _fileComment;
+    std::optional<qint64> _bytesWritten;
 };
 
 #endif // LOGGER_H

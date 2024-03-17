@@ -13,12 +13,31 @@ ApplicationWindow {
         HelpMenu {}
     }
 
+    function formatDuration(milliseconds) {
+        const ms = (milliseconds % 1000).toString()
+        const s = (Math.floor(milliseconds / 1000) % 60).toString()
+        const m = (Math.floor(milliseconds / 1000 / 60)).toString()
+        return `${m}:${s.padStart(2, '0')}.${ms.padStart(3, '0')}`
+    }
+
+    function formatSize(bytes) {
+        const prefix = ['', 'Ki', 'Mi', 'Gi']
+        let order = 0
+        while (bytes > 1024) {
+            bytes /= 1024
+            order += 1
+        }
+        return bytes.toString().slice(0, 4) + prefix[order] + 'B'
+    }
+
     ColumnLayout {
         id: statusBar
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.margins: 10
         spacing: 10
+
+        property real saveStartTime: Number.NaN
 
         RowLayout {
             Text {
@@ -33,10 +52,18 @@ ApplicationWindow {
                 Connections {
                     target: rootWindow
                     function onBeforeRendering() {
-                        const timestamp = (new Date).getTime() * 1000
-                        const text = appData.networkDisplay.formatUpdateTime(
-                                       timestamp)
-                        currentTime.text = qsTr("Current time: ") + text
+                        let text = qsTr("Current time: ")
+
+                        const time_us = (new Date).getTime() * 1000
+                        text += appData.networkDisplay.formatUpdateTime(time_us)
+
+                        if (!isNaN(statusBar.saveStartTime)) {
+                            text += qsTr(", saving log for: ")
+                            text += formatDuration(
+                                        time_us / 1000 - statusBar.saveStartTime)
+                        }
+
+                        currentTime.text = text
                     }
                 }
             }
@@ -45,8 +72,14 @@ ApplicationWindow {
         RowLayout {
             spacing: 3
             Text {
-                text: appData.logger.savingNow ? qsTr("Saving to") : qsTr(
-                                                     "Will save to")
+                text: {
+                    if (appData.logger.savingNow) {
+                        const size = formatSize(appData.logger.bytesWritten)
+                        return size + qsTr(" written to")
+                    } else {
+                        return qsTr("Will save to")
+                    }
+                }
                 color: palette.text
             }
             Text {
@@ -64,6 +97,7 @@ ApplicationWindow {
                     if (saveLimitedTime.checked) {
                         saveLimitTimer.start()
                     }
+                    statusBar.saveStartTime = (new Date).getTime()
                 }
             }
 
@@ -73,6 +107,7 @@ ApplicationWindow {
                 onClicked: {
                     appData.logger.savingNow = false
                     saveLimitTimer.stop()
+                    statusBar.saveStartTime = Number.NaN
                 }
             }
 
