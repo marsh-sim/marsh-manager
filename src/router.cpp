@@ -26,7 +26,7 @@ void Router::broadcastMessage(Message message)
 {
     for (const auto client : clients) {
         if (client->state() != ClientNode::State::TimedOut) {
-            sendMessage(client, message);
+            client->sendMessage(message);
         }
     }
 
@@ -49,7 +49,8 @@ void Router::readPendingDatagrams()
                                    &message_m,
                                    &parser_status)) {
                 receiveMessage(ClientNode::Connection{datagram.senderAddress(),
-                                                      datagram.senderPort()},
+                                                      datagram.senderPort(),
+                                                      udpSocket},
                                Message{Message::currentTime(), message_m});
             }
             // TODO: Handle repeated messages with CRC error to notify the user of a possible protocol definition mismatch
@@ -139,18 +140,7 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
     // pass the message to every subscriber
     for (const auto listener : clients) {
         if (listener->subscribed_messages.contains(message.id())) {
-            sendMessage(listener, message);
+            listener->sendMessage(message);
         }
     }
-}
-
-void Router::sendMessage(ClientNode *client, Message message)
-{
-    QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
-    message.m.seq = client->sending_sequence_number++;
-    const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(), &message.m);
-    udpSocket->writeDatagram(send_buffer,
-                             length,
-                             client->connection().address,
-                             client->connection().port);
 }

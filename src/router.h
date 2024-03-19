@@ -33,7 +33,6 @@ private slots:
 
 private:
     void receiveMessage(ClientNode::Connection connection, Message message);
-    void sendMessage(ClientNode *client, Message message);
 
     QUdpSocket *udpSocket = nullptr;
 

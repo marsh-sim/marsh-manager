@@ -22,6 +22,7 @@ public:
     enum class ClientRow : int {
         State,
         ReceivedMessages,
+        SentMessages,
     };
     Q_ENUM(ClientRow)
 
@@ -42,8 +43,16 @@ public slots:
 private slots:
     void clientStateChanged(ClientNode::State state);
     void clientMessageReceived(Message message);
+    void clientMessageSent(Message message);
 
 private:
+    enum class Direction {
+        Received,
+        Sent,
+    };
+
+    void handleClientMessage(ClientNode *client, Message message, Direction direction);
+
     int index(Column column);
     int index(ClientRow row);
     QString name(Column column);
