@@ -42,7 +42,7 @@ signals:
     void bytesWrittenChanged(double written);
 
 private slots:
-    void receiveMessage(Message message);
+    void writeMessage(Message message);
 
 private:
     QString formatFilename(std::optional<QDateTime> datetime = std::nullopt) const;

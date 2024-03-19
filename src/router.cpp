@@ -22,6 +22,21 @@ void Router::setAppData(ApplicationData *appData)
     this->appData = appData;
 }
 
+void Router::broadcastMessage(Message message)
+{
+    for (const auto client : clients) {
+        if (client->state() != ClientNode::State::TimedOut) {
+            sendMessage(client, message);
+        }
+    }
+
+    if (std::any_of(clients.cbegin(), clients.cend(), [=](ClientNode *c) {
+            return c->state() != ClientNode::State::TimedOut;
+        })) {
+        emit messageSent(message);
+    }
+}
+
 void Router::readPendingDatagrams()
 {
     while (udpSocket->hasPendingDatagrams()) {
@@ -121,17 +136,21 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
 
     emit messageReceived(message);
 
-    // broadcast the message to every subscriber
-    QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
+    // pass the message to every subscriber
     for (const auto listener : clients) {
         if (listener->subscribed_messages.contains(message.id())) {
-            message.m.seq = listener->sending_sequence_number++;
-            const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(),
-                                                           &message.m);
-            udpSocket->writeDatagram(send_buffer,
-                                      length,
-                                      listener->connection().address,
-                                      listener->connection().port);
+            sendMessage(listener, message);
         }
     }
+}
+
+void Router::sendMessage(ClientNode *client, Message message)
+{
+    QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
+    message.m.seq = client->sending_sequence_number++;
+    const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(), &message.m);
+    udpSocket->writeDatagram(send_buffer,
+                             length,
+                             client->connection().address,
+                             client->connection().port);
 }

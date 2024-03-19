@@ -55,7 +55,10 @@ qt_add_qml_module(
   src/logger.cpp
   SOURCES
   src/appearanceutils.h
-  src/appearanceutils.cpp)
+  src/appearanceutils.cpp
+  SOURCES
+  src/heartbeatservice.h
+  src/heartbeatservice.cpp)
 
 qt_add_resources(appmarsh-manager "app_text" PREFIX "/" FILES LICENSE.txt)
 

@@ -2,6 +2,7 @@
 #define APPLICATIONDATA_H
 
 #include <QObject>
+#include "heartbeatservice.h"
 #include "logger.h"
 #include "networkdisplay.h"
 #include "router.h"
@@ -30,8 +31,8 @@ public:
     NetworkDisplay *networkDisplay() const { return _networkDisplay; }
     Logger *logger() const { return _logger; }
 
-    quint8 localSystemId() const { return 1; }
-    quint8 localComponentId() const { return 25; }
+    quint8 localSystemId() const;
+    quint8 localComponentId() const;
 
     QString buildType() const { return APP_BUILD_TYPE; }
     QString buildGitCommitCount() const { return APP_GIT_COMMIT_COUNT; }
@@ -44,6 +45,9 @@ private:
     Router* _router;
     Logger *_logger;
     NetworkDisplay *_networkDisplay;
+
+    // microservice providers
+    HeartbeatService *_heartbeatService;
 };
 
 #endif // APPLICATIONDATA_H
