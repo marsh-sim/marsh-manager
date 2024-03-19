@@ -21,8 +21,11 @@ public:
 
     int listenPort() const { return 24400; }
 
+    void broadcastMessage(Message message);
+
 signals:
     void messageReceived(Message message);
+    void messageSent(Message message);
 
 private slots:
     void readPendingDatagrams();
@@ -30,6 +33,7 @@ private slots:
 
 private:
     void receiveMessage(ClientNode::Connection connection, Message message);
+    void sendMessage(ClientNode *client, Message message);
 
     QUdpSocket *udpSocket = nullptr;
 

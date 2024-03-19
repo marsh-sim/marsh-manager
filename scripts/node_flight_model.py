@@ -3,7 +3,8 @@
 from argparse import ArgumentParser
 from os import path
 import sys
-from time import sleep, time
+from time import time
+from typing import Optional
 
 from pymavlink import mavutil
 
@@ -28,11 +29,18 @@ mav.srcSystem = 1  # default system
 mav.srcComponent = mavlink.MARSH_COMP_ID_FLIGHT_MODEL
 print(f'Sending to {connection_string}')
 
+# controlling when messages should be sent
 heartbeat_next = 0.0
-heartbeat_interval = 0.5
+heartbeat_interval = 1.0
 state_next = 0.0
 state_interval = 0.25
 
+# monitoring connection to manager with heartbeat
+timeout_interval = 5.0
+manager_timeout = 0.0
+manager_connected = False
+
+# the loop goes as fast as it can, relying on the variables above for timing
 while True:
     if time() >= heartbeat_next:
         mav.heartbeat_send(
@@ -55,3 +63,21 @@ while True:
             0, 0,  # lat, lon as degrees * 10^7
         )
         state_next = time() + state_interval
+
+    # handle incoming messages
+    message: Optional[mavlink.MAVLink_message] = mav.file.recv_msg()
+    if message is not None and message.get_type() == 'HEARTBEAT':
+        # the following line only helps with type hints
+        heartbeat: mavlink.MAVLink_heartbeat_message = message
+
+        if heartbeat.get_srcComponent() == mavlink.MARSH_COMP_ID_MANAGER:
+            if not manager_connected:
+                # example of showing text for enum
+                state = mavlink.enums['MAV_STATE'][heartbeat.system_status]
+                print('Connected to simulation manager in state', state.name)
+            manager_connected = True
+            manager_timeout = time() + timeout_interval
+
+    if manager_connected and time() > manager_timeout:
+        manager_connected = False
+        print('Lost connection to simulation manager')

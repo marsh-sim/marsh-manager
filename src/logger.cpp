@@ -21,7 +21,8 @@ Logger::Logger(QObject *parent)
 void Logger::setAppData(ApplicationData *appData)
 {
     this->appData = appData;
-    connect(appData->router(), &Router::messageReceived, this, &Logger::receiveMessage);
+    connect(appData->router(), &Router::messageReceived, this, &Logger::writeMessage);
+    connect(appData->router(), &Router::messageSent, this, &Logger::writeMessage);
 }
 
 QString Logger::getDirectoryWithDialog()
@@ -74,7 +75,7 @@ void Logger::setSavingNow(bool saving)
                                           &message_m,
                                           &statustext);
 
-            receiveMessage({dateTime.toMSecsSinceEpoch() * 1000, message_m});
+            writeMessage({dateTime.toMSecsSinceEpoch() * 1000, message_m});
         }
     } else {
         outputFile->close();
@@ -95,7 +96,7 @@ void Logger::setOutputDir(QString dir)
     emit outputPathChanged(outputPath());
 }
 
-void Logger::receiveMessage(Message message)
+void Logger::writeMessage(Message message)
 {
     if (!savingNow())
         return;
