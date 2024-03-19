@@ -92,23 +92,13 @@ ApplicationWindow {
             Button {
                 text: qsTr("Save data")
                 enabled: !appData.logger.savingNow
-                onClicked: {
-                    appData.logger.savingNow = true
-                    if (saveLimitedTime.checked) {
-                        saveLimitTimer.start()
-                    }
-                    statusBar.saveStartTime = (new Date).getTime()
-                }
+                onClicked: appData.logger.savingNow = true
             }
 
             Button {
                 text: qsTr("Stop saving")
                 enabled: appData.logger.savingNow
-                onClicked: {
-                    appData.logger.savingNow = false
-                    saveLimitTimer.stop()
-                    statusBar.saveStartTime = Number.NaN
-                }
+                onClicked: appData.logger.savingNow = false
             }
 
             Button {
@@ -155,6 +145,21 @@ ApplicationWindow {
                 id: saveLimitTimer
                 interval: parseInt(saveTimeSeconds.text) * 1000
                 onTriggered: appData.logger.savingNow = false
+            }
+        }
+
+        Connections {
+            target: appData.logger
+            onSavingNowChanged: {
+                if (appData.logger.savingNow) {
+                    if (saveLimitedTime.checked) {
+                        saveLimitTimer.start()
+                    }
+                    statusBar.saveStartTime = (new Date).getTime()
+                } else {
+                    saveLimitTimer.stop()
+                    statusBar.saveStartTime = Number.NaN
+                }
             }
         }
     }
