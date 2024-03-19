@@ -4,6 +4,7 @@
 #include <QHostAddress>
 #include <QObject>
 #include <QTimer>
+#include <QUdpSocket>
 #include "message.h"
 
 class ClientNode : public QObject
@@ -24,6 +25,7 @@ public:
     {
         QHostAddress address;
         int port;
+        QUdpSocket *udpSocket;
 
         bool operator==(const Connection &other) const
         {
@@ -52,8 +54,10 @@ public:
     void setShadowed(bool shadowed);
 
     void receiveMessage(Message message);
+    void sendMessage(Message message);
 
-    QMap<MessageId, Message> last_published_message;
+    QMap<MessageId, Message> lastReceivedMessage;
+    QMap<MessageId, Message> lastSentMessage;
     QSet<MessageId> subscribed_messages;
     quint8 sending_sequence_number = 0;
 
@@ -61,6 +65,7 @@ signals:
     void stateChanged(State state);
     void shadowedChanged(bool shadowed);
     void messageReceived(Message message);
+    void messageSent(Message message);
 
 private slots:
     void heartbeatTimerElapsed(void);

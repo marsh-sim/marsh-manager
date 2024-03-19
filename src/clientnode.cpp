@@ -31,7 +31,7 @@ void ClientNode::setShadowed(bool shadowed)
 
 void ClientNode::receiveMessage(Message message)
 {
-    last_published_message[message.id()] = message;
+    lastReceivedMessage[message.id()] = message;
 
     if (message.id() == MessageId(MAVLINK_MSG_ID_HEARTBEAT)) {
         mavlink_heartbeat_t heartbeat;
@@ -41,6 +41,17 @@ void ClientNode::receiveMessage(Message message)
     }
 
     emit messageReceived(message);
+}
+
+void ClientNode::sendMessage(Message message)
+{
+    QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
+    message.m.seq = sending_sequence_number++;
+    const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(), &message.m);
+    _connection.udpSocket->writeDatagram(send_buffer, length, _connection.address, _connection.port);
+
+    lastSentMessage[message.id()] = message;
+    emit messageSent(message);
 }
 
 void ClientNode::heartbeatTimerElapsed()

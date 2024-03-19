@@ -28,7 +28,7 @@ void NetworkDisplay::addClient(ClientNode *client)
     auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
 
     auto dataItem = new QStandardItem(
-        QString("System %1 Component %2")
+        QString("System %1 component %2")
             .arg(client->system.toString(), client->component.toString()));
 
     root->appendRow({clientItem, updateItem, dataItem});
@@ -45,8 +45,14 @@ void NetworkDisplay::addClient(ClientNode *client)
     dataItem = new QStandardItem("");
     clientItem->appendRow({receivedItem, updateItem, dataItem});
 
+    auto sentItem = new QStandardItem(name(ClientRow::SentMessages));
+    updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
+    dataItem = new QStandardItem("");
+    clientItem->appendRow({sentItem, updateItem, dataItem});
+
     connect(client, &ClientNode::stateChanged, this, &NetworkDisplay::clientStateChanged);
     connect(client, &ClientNode::messageReceived, this, &NetworkDisplay::clientMessageReceived);
+    connect(client, &ClientNode::messageSent, this, &NetworkDisplay::clientMessageSent);
 }
 
 void NetworkDisplay::itemClicked(const QModelIndex &index)
@@ -94,8 +100,20 @@ void NetworkDisplay::clientMessageReceived(Message message)
     Q_ASSERT_X(sender,
                "NetworkDisplay::clientMessageReceived",
                "this signal must be sent by a client");
+    handleClientMessage(sender, message, Direction::Received);
+}
 
-    const auto clientItem = clientItems[sender];
+void NetworkDisplay::clientMessageSent(Message message)
+{
+    // HACK: getting sender is not recommended, won't bee needed after rework to QAbstractModel
+    const auto sender = qobject_cast<ClientNode *>(QObject::sender());
+    Q_ASSERT_X(sender, "NetworkDisplay::clientMessageSent", "this signal must be sent by a client");
+    handleClientMessage(sender, message, Direction::Sent);
+}
+
+void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Direction direction)
+{
+    const auto clientItem = clientItems[client];
     const auto info = mavlink_get_message_info(&message.m);
 
     // update client interaction time
@@ -106,10 +124,12 @@ void NetworkDisplay::clientMessageReceived(Message message)
     clientItem->child(index(ClientRow::ReceivedMessages), index(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
 
-    auto receivedItem = clientItem->child(index(ClientRow::ReceivedMessages));
+    const auto directionRow = direction == Direction::Received ? ClientRow::ReceivedMessages
+                                                               : ClientRow::SentMessages;
+    const auto directionItem = clientItem->child(index(directionRow));
     std::optional<int> messageRow;
-    for (int row = 0; row < receivedItem->rowCount(); ++row) {
-        const auto item = receivedItem->child(row, index(Column::Name));
+    for (int row = 0; row < directionItem->rowCount(); ++row) {
+        const auto item = directionItem->child(row, index(Column::Name));
         if (item->data(Qt::DisplayRole) == QString(info->name)) {
             messageRow = row;
         }
@@ -119,28 +139,38 @@ void NetworkDisplay::clientMessageReceived(Message message)
         QList<QStandardItem *> created{};
         created.push_back(new QStandardItem(info->name));
         created.push_back(new QStandardItem(""));
-        created.push_back(new QStandardItem(message.id().toString()));
+        created.push_back(new QStandardItem(QString("id: ") + message.id().toString()));
+
+        // show the message source for sent messages
+        if (direction == Direction::Sent) {
+            auto dataItem = created.last();
+            dataItem->setData(dataItem->data(Qt::DisplayRole).toString()
+                                  + QString(", from system %1 component %2")
+                                        .arg(message.senderSystem().toString())
+                                        .arg(message.senderComponent().toString()),
+                              Qt::DisplayRole);
+        }
 
         // insert in order of message id
         messageNameToId.insert(info->name, message.id());
         int insertRow = 0;
-        for (int row = 0; row < receivedItem->rowCount(); ++row) {
-            const auto item = receivedItem->child(row, index(Column::Name));
+        for (int row = 0; row < directionItem->rowCount(); ++row) {
+            const auto item = directionItem->child(row, index(Column::Name));
             if (message.id()
                 < messageNameToId.value(item->data(Qt::DisplayRole).toString(), MessageId(0)))
                 break; // shouldn't increase past this row
             insertRow++;
         }
 
-        receivedItem->insertRow(insertRow, created);
+        directionItem->insertRow(insertRow, created);
         messageRow = created[0]->row();
     }
 
-    // update received time for this message
-    receivedItem->child(*messageRow, index(Column::Updated))
+    // update time for this message
+    directionItem->child(*messageRow, index(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
 
-    auto messageItem = receivedItem->child(*messageRow);
+    auto messageItem = directionItem->child(*messageRow);
     if (!messageItem->hasChildren()) {
         // ensure there are rows for each field of the message in XML order
         for (int row = 0; row < info->num_fields; ++row) {
