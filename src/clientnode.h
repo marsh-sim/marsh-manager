@@ -58,8 +58,8 @@ public:
 
     QMap<MessageId, Message> lastReceivedMessage;
     QMap<MessageId, Message> lastSentMessage;
-    QSet<MessageId> subscribed_messages;
-    quint8 sending_sequence_number = 0;
+    QSet<MessageId> subscribedMessages;
+    quint8 sendingSequenceNumber = 0;
 
 signals:
     void stateChanged(State state);
@@ -71,6 +71,9 @@ private slots:
     void heartbeatTimerElapsed(void);
 
 private:
+    /// subscribe to messages based on component id
+    void autoSubscribe();
+
     Connection _connection;
     State _state;
     /// This is the first *currently* connected client with this system id and component id

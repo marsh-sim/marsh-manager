@@ -17,6 +17,8 @@ ClientNode::ClientNode(
     heartbeatTimer->setInterval(5000);
     heartbeatTimer->start();
     connect(heartbeatTimer, &QTimer::timeout, this, &ClientNode::heartbeatTimerElapsed);
+
+    autoSubscribe();
 }
 
 void ClientNode::setShadowed(bool shadowed)
@@ -46,9 +48,15 @@ void ClientNode::receiveMessage(Message message)
 void ClientNode::sendMessage(Message message)
 {
     QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
-    message.m.seq = sending_sequence_number++;
+    // message.m.seq = sendingSequenceNumber++; // FIXME: needs to be repacked afterwards, otherwise breaks CRC
     const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(), &message.m);
-    _connection.udpSocket->writeDatagram(send_buffer, length, _connection.address, _connection.port);
+    auto sent = _connection.udpSocket->writeDatagram(send_buffer,
+                                                     length,
+                                                     _connection.address,
+                                                     _connection.port);
+    if (sent < 0) {
+        qDebug() << "Error sending to" << _connection.port;
+    }
 
     lastSentMessage[message.id()] = message;
     emit messageSent(message);
@@ -58,6 +66,21 @@ void ClientNode::heartbeatTimerElapsed()
 {
     _state = State::TimedOut;
     emit stateChanged(_state);
+}
+
+void ClientNode::autoSubscribe()
+{
+    switch (component.value()) {
+    case MARSH_COMP_ID_FLIGHT_MODEL:
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL);
+        break;
+    case MARSH_COMP_ID_VISUALISATION:
+    case MARSH_COMP_ID_INSTRUMENTS:
+    case MARSH_COMP_ID_MOTION_PLATFORM:
+    case MARSH_COMP_ID_GSEAT:
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
+        break;
+    }
 }
 
 QString ClientNode::Connection::toString()

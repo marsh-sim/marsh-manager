@@ -150,8 +150,8 @@ ApplicationWindow {
 
         Connections {
             target: appData.logger
-            onSavingNowChanged: {
-                if (appData.logger.savingNow) {
+            function onSavingNowChanged(savingNow) {
+                if (savingNow) {
                     if (saveLimitedTime.checked) {
                         saveLimitTimer.start()
                     }
