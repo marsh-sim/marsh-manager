@@ -52,6 +52,8 @@ private:
     };
 
     void handleClientMessage(ClientNode *client, Message message, Direction direction);
+    QString formatFieldData(QVariant data);
+    QString formatPascalCase(QString pascal);
 
     int index(Column column);
     int index(ClientRow row);

@@ -1,5 +1,6 @@
 #include "networkdisplay.h"
 #include <QMetaEnum>
+#include <QRegularExpression>
 #include <QTimer>
 #include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
 #include <cmath>
@@ -120,12 +121,14 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
     _model->invisibleRootItem()
         ->child(clientItem->row(), index(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
-    // update any received message time
-    clientItem->child(index(ClientRow::ReceivedMessages), index(Column::Updated))
-        ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
 
     const auto directionRow = direction == Direction::Received ? ClientRow::ReceivedMessages
                                                                : ClientRow::SentMessages;
+
+    // update time of any message in this direction
+    clientItem->child(index(directionRow), index(Column::Updated))
+        ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
+
     const auto directionItem = clientItem->child(index(directionRow));
     std::optional<int> messageRow;
     for (int row = 0; row < directionItem->rowCount(); ++row) {
@@ -187,13 +190,30 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
     // update only changed values
     for (int row = 0; row < messageItem->rowCount(); ++row) {
         const auto field = info->fields[row];
-        auto data = mavlinkData(field, message).toString();
+        const auto data = formatFieldData(mavlinkData(field, message));
         if (data != messageItem->child(row, index(Column::Data))->data(Qt::DisplayRole)) {
             messageItem->child(row, index(Column::Data))->setData(data, Qt::DisplayRole);
             messageItem->child(row, index(Column::Updated))
                 ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
         }
     }
+}
+
+QString NetworkDisplay::formatFieldData(QVariant data)
+{
+    if (data.metaType() == QMetaType::fromType<float>()) {
+        return QString("%1f").arg(data.toFloat(), 0, 'f', 6);
+    } else if (data.metaType() == QMetaType::fromType<double>()) {
+        return QString("%1").arg(data.toDouble(), 0, 'f', 6);
+    } else {
+        return data.toString();
+    }
+}
+
+QString NetworkDisplay::formatPascalCase(QString pascal)
+{
+    const auto re = QRegularExpression("([a-z])([A-Z])");
+    return pascal.left(1) + pascal.mid(1).replace(re, R"(\1 \2)").toLower();
 }
 
 QString NetworkDisplay::formatUpdateTime(qint64 timestamp)
@@ -217,19 +237,19 @@ int NetworkDisplay::index(ClientRow value)
 QString NetworkDisplay::name(Column value)
 {
     auto metaEnum = QMetaEnum::fromType<Column>();
-    return QString(metaEnum.valueToKey(static_cast<int>(value)));
+    return formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
 }
 
 QString NetworkDisplay::name(ClientRow value)
 {
     auto metaEnum = QMetaEnum::fromType<ClientRow>();
-    return QString(metaEnum.valueToKey(static_cast<int>(value)));
+    return formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
 }
 
 QString NetworkDisplay::name(ClientNode::State value)
 {
     auto metaEnum = QMetaEnum::fromType<ClientNode::State>();
-    return QString(metaEnum.valueToKey(static_cast<int>(value)));
+    return formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
 }
 
 QVariant NetworkDisplay::stateColor(ClientNode::State state)
