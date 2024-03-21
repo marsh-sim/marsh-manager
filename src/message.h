@@ -17,6 +17,7 @@ public:
     bool operator<(const SystemId &other) const { return _value < other._value; }
     QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const SystemId &id);
+    uint8_t value() const { return _value; }
 
 private:
     uint8_t _value;
@@ -34,6 +35,7 @@ public:
     bool operator<(const ComponentId &other) const { return _value < other._value; }
     QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const ComponentId &id);
+    uint8_t value() const { return _value; }
 
 private:
     uint8_t _value;
@@ -51,6 +53,7 @@ public:
     bool operator<(const MessageId &other) const { return _value < other._value; }
     QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const MessageId &id);
+    uint32_t value() const { return _value; }
 
 private:
     uint32_t _value;

@@ -139,7 +139,7 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
 
     // pass the message to every subscriber
     for (const auto listener : clients) {
-        if (listener->subscribed_messages.contains(message.id())) {
+        if (listener->subscribedMessages.contains(message.id())) {
             listener->sendMessage(message);
         }
     }
