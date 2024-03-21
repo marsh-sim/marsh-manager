@@ -68,13 +68,15 @@ def simulate(_previous_state: mavlink.MAVLink_sim_state_message, controls: Contr
     Trivial example, rotate the attitude with directly with joystick
     """
     MAX_ANGLE = radians(5.0)
+    MAX_ACCEL = 0.2 * STD_G
+
     pitch = MAX_ANGLE * -controls.pitch
     roll = MAX_ANGLE * controls.roll
     yaw = 0.0
     q1, q2, q3, q4 = euler_to_quaternion(roll, pitch, yaw)
 
     # for acceleration start with gravity vector and rotate by attitude
-    acc = [0.0, 0.0, STD_G]
+    acc = [0.0, 0.0, MAX_ACCEL * controls.thrust + STD_G]
     acc[1] = acc[1] * cos(roll) + acc[2] * sin(roll)
     acc[2] = acc[1] * -sin(roll) + acc[2] * cos(roll)
     acc[0] = acc[0] * cos(pitch) + acc[2] * -sin(pitch)

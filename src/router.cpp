@@ -12,7 +12,7 @@ Router::Router(QObject *parent)
     : QObject{parent}
 {
     udpSocket = new QUdpSocket(this);
-    // FIXME: Should bind exclusively to this port (throw error if already used by another process)
+    // FIXME: Should bind to this port exclusively (throw error if already used by another process)
     udpSocket->bind(QHostAddress::AnyIPv4, listenPort());
     connect(udpSocket, &QUdpSocket::readyRead, this, &Router::readPendingDatagrams);
 }
