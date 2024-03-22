@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
     parser.process(app);
 
     ApplicationData appData;
+    appData.dialect()->loadDefinitions(); // turned out fast enough to call it here
 
 #ifdef Q_OS_WIN
     AppearanceUtils::fixWindowsPalette(&app);

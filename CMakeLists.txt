@@ -58,9 +58,45 @@ qt_add_qml_module(
   src/appearanceutils.cpp
   SOURCES
   src/heartbeatservice.h
-  src/heartbeatservice.cpp)
+  src/heartbeatservice.cpp
+  SOURCES
+  src/dialectinfo.h
+  src/dialectinfo.cpp)
 
 qt_add_resources(appmarsh-manager "app_text" PREFIX "/" FILES LICENSE.txt)
+
+# files included in all.xml
+set(MESSAGE_DEFINITION_FILES
+    all.xml
+    ardupilotmega.xml
+    ASLUAV.xml
+    common.xml
+    development.xml
+    icarous.xml
+    minimal.xml
+    python_array_test.xml
+    standard.xml
+    test.xml
+    ualberta.xml
+    uAvionix.xml
+    storm32.xml
+    AVSSUAS.xml
+    cubepilot.xml
+    csAirLink.xml
+    marsh.xml)
+
+set(MESSAGE_DEFINITION_PATHS ${MESSAGE_DEFINITION_FILES})
+set(MESSAGE_DEFINITION_BASE "include/mavlink/message_definitions")
+list(TRANSFORM MESSAGE_DEFINITION_PATHS PREPEND "${MESSAGE_DEFINITION_BASE}/")
+qt_add_resources(
+  appmarsh-manager
+  "message_definitions"
+  PREFIX
+  "/msgdef"
+  BASE
+  ${MESSAGE_DEFINITION_BASE}
+  FILES
+  ${MESSAGE_DEFINITION_PATHS})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1. If
 # you are developing for iOS or macOS you should consider setting an explicit,
@@ -95,19 +131,27 @@ execute_process(
   OUTPUT_VARIABLE GIT_HASH
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+# change list separator from semicolon to comma, to put in compile definitions
+string(REPLACE ";" "," MESSAGE_DEFINITION_FILES_COMMA
+               "${MESSAGE_DEFINITION_FILES}")
+
 target_compile_definitions(
   appmarsh-manager
-  PRIVATE MAVLINK_USE_MESSAGE_INFO=1
-  # prevent MSVC from redefining same constants that Qt provides
-  PRIVATE _MATH_DEFINES_DEFINED=1
-  PRIVATE APP_GIT_COMMIT_COUNT="${GIT_COMMIT_COUNT}"
-  PRIVATE APP_GIT_HASH="${GIT_HASH}"
-  PRIVATE APP_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
-  # add git commit number to Debug build version
   PRIVATE
+    MAVLINK_USE_MESSAGE_INFO=1
+    # prevent MSVC from redefining same constants that Qt provides
+    _MATH_DEFINES_DEFINED=1
+    APP_GIT_COMMIT_COUNT="${GIT_COMMIT_COUNT}"
+    APP_GIT_HASH="${GIT_HASH}"
+    APP_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
+    # add git commit number to Debug build version
     APP_VERSION="${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}$<$<CONFIG:Debug>:+${PROJECT_VERSION_TWEAK}>"
-  # suppress the "QML debugging is enabled..." warning
-  PRIVATE QT_QML_DEBUG_NO_WARNING=1)
+    # suppress the "QML debugging is enabled..." warning
+    QT_QML_DEBUG_NO_WARNING=1
+    MESSAGE_DEFINITION_FILES="${MESSAGE_DEFINITION_FILES_COMMA}")
+
+# get_target_property(COMPDEFS appmarsh-manager COMPILE_DEFINITIONS)
+# message("${COMPDEFS}")
 
 target_link_libraries(
   appmarsh-manager

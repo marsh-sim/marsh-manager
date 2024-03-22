@@ -2,6 +2,7 @@
 #define APPLICATIONDATA_H
 
 #include <QObject>
+#include "dialectinfo.h"
 #include "heartbeatservice.h"
 #include "logger.h"
 #include "networkdisplay.h"
@@ -18,6 +19,7 @@ public:
     Q_PROPERTY(Router* router READ router CONSTANT)
     Q_PROPERTY(NetworkDisplay *networkDisplay READ networkDisplay CONSTANT)
     Q_PROPERTY(Logger *logger READ logger CONSTANT)
+    Q_PROPERTY(DialectInfo *dialect READ dialect CONSTANT)
 
     Q_PROPERTY(quint8 localSystemId READ localSystemId CONSTANT)
     Q_PROPERTY(quint8 localComponentId READ localComponentId CONSTANT)
@@ -30,6 +32,7 @@ public:
     Router *router() const { return _router; }
     NetworkDisplay *networkDisplay() const { return _networkDisplay; }
     Logger *logger() const { return _logger; }
+    DialectInfo *dialect() const { return _dialect; }
 
     quint8 localSystemId() const;
     quint8 localComponentId() const;
@@ -45,6 +48,7 @@ private:
     Router* _router;
     Logger *_logger;
     NetworkDisplay *_networkDisplay;
+    DialectInfo *_dialect;
 
     // microservice providers
     HeartbeatService *_heartbeatService;

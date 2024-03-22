@@ -5,6 +5,8 @@
 #include <QStandardItemModel>
 #include "clientnode.h"
 
+class ApplicationData;
+
 /// Translates application types into standard Qt model class
 class NetworkDisplay : public QObject
 {
@@ -27,6 +29,7 @@ public:
     Q_ENUM(ClientRow)
 
     explicit NetworkDisplay(QObject *parent = nullptr);
+    void setAppData(ApplicationData *appData);
 
     Q_PROPERTY(QStandardItemModel *model READ model CONSTANT)
 
@@ -60,10 +63,12 @@ private:
     QString name(Column column);
     QString name(ClientRow row);
     QString name(ClientNode::State state);
+    QString name(ComponentId component);
 
     QVariant stateColor(ClientNode::State state);
     QVariant mavlinkData(const mavlink_field_info_t &field, const Message &message);
 
+    ApplicationData *appData;
     QStandardItemModel *_model;
     const qint64 startTimestamp;
 

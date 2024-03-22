@@ -23,8 +23,8 @@ Item {
 
         delegate: TreeViewDelegate {
             contentItem: Text {
-                text: model.display
-                color: model.decoration ? model.decoration : palette.text
+                text: model.display ?? ""
+                color: model.decoration ?? palette.text
             }
 
             onClicked: appData.networkDisplay.itemClicked(treeView.index(
