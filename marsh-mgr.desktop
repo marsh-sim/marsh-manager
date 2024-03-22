@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=MARSH Manager
+Path=/usr/bin
+Exec=marsh-mgr
+Type=Application
+Icon=manager256
+Categories=Science;Engineering;
+Terminal=false
+StartupNotify=true
+NoDisplay=false
+X-AppImage-Arch=x86_64
