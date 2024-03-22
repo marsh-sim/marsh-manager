@@ -2,6 +2,7 @@
 #include <QMetaEnum>
 #include <QRegularExpression>
 #include <QTimer>
+#include "applicationdata.h"
 #include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
 #include <cmath>
 
@@ -19,6 +20,11 @@ NetworkDisplay::NetworkDisplay(QObject *parent)
     _model->setHorizontalHeaderLabels(headerLabels);
 }
 
+void NetworkDisplay::setAppData(ApplicationData *appData)
+{
+    this->appData = appData;
+}
+
 void NetworkDisplay::addClient(ClientNode *client)
 {
     auto root = _model->invisibleRootItem();
@@ -29,8 +35,7 @@ void NetworkDisplay::addClient(ClientNode *client)
     auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
 
     auto dataItem = new QStandardItem(
-        QString("System %1 component %2")
-            .arg(client->system.toString(), client->component.toString()));
+        QString("System %1 %2").arg(client->system.toString(), name(client->component)));
 
     root->appendRow({clientItem, updateItem, dataItem});
     clientItems[client] = clientItem;
@@ -148,9 +153,9 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
         if (direction == Direction::Sent) {
             auto dataItem = created.last();
             dataItem->setData(dataItem->data(Qt::DisplayRole).toString()
-                                  + QString(", from system %1 component %2")
+                                  + QString(", from system %1 %2")
                                         .arg(message.senderSystem().toString())
-                                        .arg(message.senderComponent().toString()),
+                                        .arg(name(message.senderComponent())),
                               Qt::DisplayRole);
         }
 
@@ -202,7 +207,7 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
 QString NetworkDisplay::formatFieldData(QVariant data)
 {
     if (data.metaType() == QMetaType::fromType<float>()) {
-        return QString("%1f").arg(data.toFloat(), 0, 'f', 6);
+        return QString("%1").arg(data.toFloat(), 0, 'f', 6);
     } else if (data.metaType() == QMetaType::fromType<double>()) {
         return QString("%1").arg(data.toDouble(), 0, 'f', 6);
     } else {
@@ -250,6 +255,14 @@ QString NetworkDisplay::name(ClientNode::State value)
 {
     auto metaEnum = QMetaEnum::fromType<ClientNode::State>();
     return formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
+}
+
+QString NetworkDisplay::name(ComponentId component)
+{
+    auto name = appData->dialect()->componentName(component);
+    if (name)
+        return *name;
+    return QString("Component %1").arg(component.toString());
 }
 
 QVariant NetworkDisplay::stateColor(ClientNode::State state)
