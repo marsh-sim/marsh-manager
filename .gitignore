@@ -1,6 +1,9 @@
 # Generated messages
 include/mavlink
 
+# Application build
+*.AppImage
+
 # Created by https://www.toptal.com/developers/gitignore/api/qt,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=qt,python
 
