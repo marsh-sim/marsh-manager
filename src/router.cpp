@@ -98,38 +98,40 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
         });
         if (it != std::end(clients)) {
             client = *it;
-        } else if (message.m.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
+        } else {
+            ClientNode::State state = ClientNode::State::Unregistered;
             // only register clients when receiving heartbeat
+            if (message.id() == MessageId(MAVLINK_MSG_ID_HEARTBEAT)) {
+                // look for already connected clients with the same system and component id
+                it = std::find_if(clients.cbegin(), clients.cend(), [&](const ClientNode *c) {
+                    return c->system == message.senderSystem()
+                           && c->component == message.senderComponent()
+                           && c->state() == ClientNode::State::Connected;
+                });
+                bool syscomp_free = it == std::end(clients);
+                state = syscomp_free ? ClientNode::State::Connected : ClientNode::State::Shadowed;
 
-            // look for already connected clients with the same system and component id
-            it = std::find_if(clients.cbegin(), clients.cend(), [&](const ClientNode *c) {
-                return c->system == message.senderSystem()
-                       && c->component == message.senderComponent()
-                       && c->state() == ClientNode::State::Connected;
-            });
-            bool syscomp_free = it == std::end(clients);
+                if (syscomp_free)
+                    messageDebug() << "registered a new client";
+                else
+                    messageDebug() << "another client for component" << message.m.compid
+                                   << "in system" << message.m.sysid;
+            } else {
+                messageDebug()
+                    << "addding unregistered client, send HEARTBEAT for normal operation";
+            }
 
             client = new ClientNode(this,
                                     connection,
                                     message.senderSystem(),
                                     message.senderComponent(),
-                                    syscomp_free ? ClientNode::State::Connected
-                                                 : ClientNode::State::Shadowed);
+                                    state);
             clients.push_back(client);
             connect(client, &ClientNode::stateChanged, this, &Router::clientStateChanged);
             appData->networkDisplay()->addClient(client);
-
-            if (syscomp_free)
-                messageDebug() << "registered a new client";
-            else
-                messageDebug() << "another client for component" << message.m.compid << "in system"
-                               << message.m.sysid;
         }
     }
-    if (!client) {
-        messageDebug() << "message from unregistered client, send HEARTBEAT first";
-        return;
-    }
+    Q_ASSERT(client);
 
     client->receiveMessage(message); // always process the message in that client
     if (client->state() != ClientNode::State::Connected)

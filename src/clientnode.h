@@ -18,6 +18,8 @@ public:
         Shadowed,
         /// Client has not sent a HEARTBEAT in the required time window
         TimedOut,
+        /// No HEARTBEAT has been received from this connection, only different messages
+        Unregistered,
     };
     Q_ENUM(State)
 
