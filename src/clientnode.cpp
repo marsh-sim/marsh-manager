@@ -40,6 +40,11 @@ void ClientNode::receiveMessage(Message message)
         mavlink_msg_heartbeat_decode(&message.m, &heartbeat);
 
         heartbeatTimer->start();
+
+        if (_state == State::Unregistered) {
+            _state = firstSysidCompid ? State::Shadowed : State::Connected;
+            emit stateChanged(_state);
+        }
     }
 
     emit messageReceived(message);
@@ -64,8 +69,10 @@ void ClientNode::sendMessage(Message message)
 
 void ClientNode::heartbeatTimerElapsed()
 {
-    _state = State::TimedOut;
-    emit stateChanged(_state);
+    if (_state != State::Unregistered) {
+        _state = State::TimedOut;
+        emit stateChanged(_state);
+    }
 }
 
 void ClientNode::autoSubscribe()

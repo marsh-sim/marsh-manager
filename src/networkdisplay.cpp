@@ -33,9 +33,11 @@ void NetworkDisplay::addClient(ClientNode *client)
     clientItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
     auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
+    updateItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
     auto dataItem = new QStandardItem(
         QString("System %1 %2").arg(client->system.toString(), name(client->component)));
+    dataItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
     root->appendRow({clientItem, updateItem, dataItem});
     clientItems[client] = clientItem;
@@ -267,6 +269,7 @@ QString NetworkDisplay::name(ComponentId component)
 
 QVariant NetworkDisplay::stateColor(ClientNode::State state)
 {
+    // For now they need to work with both light and dark background
     switch (state) {
     case ClientNode::State::Connected:
         return {};
@@ -274,6 +277,8 @@ QVariant NetworkDisplay::stateColor(ClientNode::State state)
         return QColor(63, 63, 191);
     case ClientNode::State::TimedOut:
         return QColor(127, 127, 127);
+    case ClientNode::State::Unregistered:
+        return QColor(171, 114, 0);
     }
     qWarning() << "NetworkDisplay::stateColor didn't handle state" << name(state);
     return {};
