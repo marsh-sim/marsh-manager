@@ -15,10 +15,14 @@ int64_t Message::currentTime()
 std::optional<int64_t> Message::startTimestamp{};
 std::optional<QElapsedTimer> Message::runningTimer{};
 
+const SystemId SystemId::Broadcast{0};
+
 int qHash(const SystemId &id)
 {
     return qHash(id._value);
 }
+
+const ComponentId ComponentId::Broadcast{0};
 
 int qHash(const ComponentId &id)
 {

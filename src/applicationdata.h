@@ -6,6 +6,7 @@
 #include "heartbeatservice.h"
 #include "logger.h"
 #include "networkdisplay.h"
+#include "parameterservice.h"
 #include "router.h"
 
 /// Central object available in QML through `appData` property
@@ -52,6 +53,7 @@ private:
 
     // microservice providers
     HeartbeatService *_heartbeatService;
+    ParameterService *_parameterService;
 };
 
 #endif // APPLICATIONDATA_H

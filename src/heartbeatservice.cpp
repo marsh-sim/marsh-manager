@@ -36,5 +36,5 @@ void HeartbeatService::sendTimerElapsed()
                                       &message.m,
                                       &heartbeat);
 
-    appData->router()->broadcastMessage(message);
+    appData->router()->sendMessage(message);
 }

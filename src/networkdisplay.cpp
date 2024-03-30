@@ -23,6 +23,7 @@ NetworkDisplay::NetworkDisplay(QObject *parent)
 void NetworkDisplay::setAppData(ApplicationData *appData)
 {
     this->appData = appData;
+    connect(appData->router(), &Router::clientAdded, this, &NetworkDisplay::addClient);
 }
 
 void NetworkDisplay::addClient(ClientNode *client)
@@ -256,7 +257,12 @@ QString NetworkDisplay::name(ClientRow value)
 QString NetworkDisplay::name(ClientNode::State value)
 {
     auto metaEnum = QMetaEnum::fromType<ClientNode::State>();
-    return formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
+    QString name = formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
+    if (value == ClientNode::State::Unregistered) {
+        // HACK: This way the hint will be consistent, name() for state is only used for the display role anyway
+        name += QString(", please send HEARTBEAT message");
+    }
+    return name;
 }
 
 QString NetworkDisplay::name(ComponentId component)
