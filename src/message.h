@@ -13,6 +13,8 @@ public:
         : _value(value)
     {}
 
+    static const SystemId Broadcast;
+
     bool operator==(const SystemId &other) const { return _value == other._value; }
     bool operator<(const SystemId &other) const { return _value < other._value; }
     QString toString() const { return QString("%1").arg(_value); }
@@ -30,6 +32,8 @@ public:
     explicit ComponentId(uint8_t value)
         : _value(value)
     {}
+
+    static const ComponentId Broadcast;
 
     bool operator==(const ComponentId &other) const { return _value == other._value; }
     bool operator<(const ComponentId &other) const { return _value < other._value; }

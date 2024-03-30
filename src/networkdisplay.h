@@ -37,13 +37,13 @@ public:
 
     QStandardItemModel *model() const { return _model; }
 
-    void addClient(ClientNode *client);
 signals:
 
 public slots:
     void itemClicked(const QModelIndex &index);
 
 private slots:
+    void addClient(ClientNode *client);
     void clientStateChanged(ClientNode::State state);
     void clientMessageReceived(Message message);
     void clientMessageSent(Message message);

@@ -61,7 +61,10 @@ qt_add_qml_module(
   src/heartbeatservice.cpp
   SOURCES
   src/dialectinfo.h
-  src/dialectinfo.cpp)
+  src/dialectinfo.cpp
+  SOURCES
+  src/parameterservice.h
+  src/parameterservice.cpp)
 
 qt_add_resources(appmarsh-manager "app_text" PREFIX "/" FILES LICENSE.txt)
 

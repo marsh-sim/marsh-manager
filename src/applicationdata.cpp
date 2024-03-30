@@ -10,6 +10,7 @@ ApplicationData::ApplicationData(QObject *parent)
     _networkDisplay = new NetworkDisplay(this);
     _logger = new Logger(this);
     _heartbeatService = new HeartbeatService(this);
+    _parameterService = new ParameterService(this);
     _dialect = new DialectInfo(this);
 
     // pass this reference again when all children are constructed
@@ -17,6 +18,7 @@ ApplicationData::ApplicationData(QObject *parent)
     _networkDisplay->setAppData(this);
     _logger->setAppData(this);
     _heartbeatService->setAppData(this);
+    _parameterService->setAppData(this);
 }
 
 quint8 ApplicationData::localSystemId() const

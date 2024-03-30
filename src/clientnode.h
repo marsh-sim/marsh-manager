@@ -55,9 +55,6 @@ public:
 
     void setShadowed(bool shadowed);
 
-    void receiveMessage(Message message);
-    void sendMessage(Message message);
-
     QMap<MessageId, Message> lastReceivedMessage;
     QMap<MessageId, Message> lastSentMessage;
     QSet<MessageId> subscribedMessages;
@@ -73,6 +70,11 @@ private slots:
     void heartbeatTimerElapsed(void);
 
 private:
+    friend class Router;
+    // All messages are supposed to be sent through Router
+    void receiveMessage(Message message);
+    void sendMessage(Message message);
+
     /// subscribe to messages based on component id
     void autoSubscribe();
 

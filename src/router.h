@@ -18,14 +18,21 @@ public:
     void setAppData(ApplicationData *appData);
 
     Q_PROPERTY(int listenPort READ listenPort CONSTANT)
+    Q_PROPERTY(QSet<ComponentId> connectedComponents READ connectedComponents NOTIFY
+                   connectedComponentsChanged FINAL)
 
     int listenPort() const { return 24400; }
+    QSet<ComponentId> connectedComponents() const;
 
-    void broadcastMessage(Message message);
+    void sendMessage(Message message,
+                     ComponentId targetComponent = ComponentId::Broadcast,
+                     SystemId targetSystem = SystemId::Broadcast);
 
 signals:
     void messageReceived(Message message);
     void messageSent(Message message);
+    void clientAdded(ClientNode *client);
+    void connectedComponentsChanged(QSet<ComponentId> components);
 
 private slots:
     void readPendingDatagrams();

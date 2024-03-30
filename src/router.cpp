@@ -22,17 +22,30 @@ void Router::setAppData(ApplicationData *appData)
     this->appData = appData;
 }
 
-void Router::broadcastMessage(Message message)
+QSet<ComponentId> Router::connectedComponents() const
 {
+    QSet<ComponentId> connected;
     for (const auto client : clients) {
-        if (client->state() != ClientNode::State::TimedOut) {
+        if (client->state() == ClientNode::State::Connected) {
+            connected.insert(client->component);
+        }
+    }
+    return connected;
+}
+
+void Router::sendMessage(Message message, ComponentId targetComponent, SystemId targetSystem)
+{
+    bool sent = false;
+    for (const auto client : clients) {
+        if (client->state() != ClientNode::State::TimedOut
+            && (targetComponent == ComponentId::Broadcast || targetComponent == client->component)
+            && (targetSystem == SystemId::Broadcast || targetSystem == client->system)) {
             client->sendMessage(message);
+            sent = true;
         }
     }
 
-    if (std::any_of(clients.cbegin(), clients.cend(), [=](ClientNode *c) {
-            return c->state() != ClientNode::State::TimedOut;
-        })) {
+    if (sent) {
         emit messageSent(message);
     }
 }
@@ -60,6 +73,8 @@ void Router::readPendingDatagrams()
 
 void Router::clientStateChanged(ClientNode::State state)
 {
+    const auto oldComponents = connectedComponents();
+
     if (state == ClientNode::State::TimedOut) {
         // some client previously shadowed may be the first component now
 
@@ -79,6 +94,10 @@ void Router::clientStateChanged(ClientNode::State state)
             }
         }
     }
+
+    const auto components = connectedComponents();
+    if (components != oldComponents)
+        emit connectedComponentsChanged(components);
 }
 
 void Router::receiveMessage(ClientNode::Connection connection, Message message)
@@ -111,9 +130,10 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
                 bool syscomp_free = it == std::end(clients);
                 state = syscomp_free ? ClientNode::State::Connected : ClientNode::State::Shadowed;
 
-                if (syscomp_free)
+                if (syscomp_free) {
+                    emit connectedComponentsChanged(connectedComponents());
                     messageDebug() << "registered a new client";
-                else
+                } else
                     messageDebug() << "another client for component" << message.m.compid
                                    << "in system" << message.m.sysid;
             } else {
@@ -128,7 +148,7 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
                                     state);
             clients.push_back(client);
             connect(client, &ClientNode::stateChanged, this, &Router::clientStateChanged);
-            appData->networkDisplay()->addClient(client);
+            emit clientAdded(client);
         }
     }
     Q_ASSERT(client);
