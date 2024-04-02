@@ -81,8 +81,12 @@ void ClientNode::autoSubscribe()
     case MARSH_COMP_ID_FLIGHT_MODEL:
         subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL);
         break;
-    case MARSH_COMP_ID_VISUALISATION:
     case MARSH_COMP_ID_INSTRUMENTS:
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_SETPOINT);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
+        break;
+    case MARSH_COMP_ID_VISUALISATION:
     case MARSH_COMP_ID_MOTION_PLATFORM:
     case MARSH_COMP_ID_GSEAT:
         subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
