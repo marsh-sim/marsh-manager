@@ -23,8 +23,13 @@ Item {
 
         delegate: TreeViewDelegate {
             contentItem: Text {
-                text: model.display ?? ""
+                readonly property bool highlight: (model.editable ?? false)
+                                                  && hovered
+
+                text: (model.display
+                       ?? "") + (highlight ? " (click to edit)" : "")
                 color: model.decoration ?? palette.text
+                font.bold: highlight
             }
 
             onClicked: appData.networkDisplay.itemClicked(treeView.index(

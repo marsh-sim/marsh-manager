@@ -55,13 +55,17 @@ private:
         Sent,
     };
 
+    enum CustomRoles : int {
+        EditableRole = Qt::UserRole,
+    };
+
     void handleClientMessage(ClientNode *client, Message message, Direction direction);
     void handleParamValue(ClientNode *client, Message message);
     QString formatFieldData(QVariant data);
     QString formatPascalCase(QString pascal);
 
-    int index(Column column);
-    int index(ClientRow row);
+    int order(Column column);
+    int order(ClientRow row);
     QString name(Column column);
     QString name(ClientRow row);
     QString name(ClientNode::State state);

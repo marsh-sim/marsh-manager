@@ -1,4 +1,6 @@
 #include "networkdisplay.h"
+#include <QApplication>
+#include <QInputDialog>
 #include <QMetaEnum>
 #include <QRegularExpression>
 #include <QTimer>
@@ -11,6 +13,9 @@ NetworkDisplay::NetworkDisplay(QObject *parent)
     , startTimestamp{Message::currentTime()}
 {
     _model = new QStandardItemModel(this);
+    auto roleNames = _model->roleNames();
+    roleNames[EditableRole] = "editable";
+    _model->setItemRoleNames(roleNames);
 
     auto metaEnum = QMetaEnum::fromType<Column>();
     QStringList headerLabels{};
@@ -59,7 +64,7 @@ void NetworkDisplay::addClient(ClientNode *client)
     dataItem = new QStandardItem("");
     clientItem->appendRow({sentItem, updateItem, dataItem});
 
-    auto paramItem = new QStandardItem(name(ClientRow::Parameters));
+    auto paramItem = new QStandardItem(QString("No parameters"));
     paramItem->setData(stateColor(ClientNode::State::TimedOut), Qt::DecorationRole);
     updateItem = new QStandardItem("");
     dataItem = new QStandardItem("");
@@ -72,9 +77,48 @@ void NetworkDisplay::addClient(ClientNode *client)
 
 void NetworkDisplay::itemClicked(const QModelIndex &index)
 {
+    int level = 0;
+    auto parent = index.parent();
+    while (parent.isValid()) {
+        level++;
+        parent = parent.parent();
+    }
+
+    // handle parameter value
+    if (level == 2 && index.parent().row() == order(ClientRow::Parameters)
+        && index.column() == order(Column::Data)) {
+        const auto name = _model->itemFromIndex(index.siblingAtColumn(order(Column::Name)))
+                              ->data(Qt::DisplayRole)
+                              .toString();
+        const auto valueText = _model->itemFromIndex(index)->data(Qt::DisplayRole).toString();
+        const auto client = clientItems.key(_model->itemFromIndex(index.parent().parent()), nullptr);
+        Q_ASSERT_X(client,
+                   "NetworkDisplay::itemClicked",
+                   "didn't find a matching client for the provided index");
+
+        bool accepted;
+        // TODO: Add dialog for integers
+        double oldValue = valueText.toDouble();
+        double newValue = QInputDialog::getDouble(qApp->activeWindow(),
+                                                  QString("Edit %1").arg(name),
+                                                  "New value:",
+                                                  oldValue,
+                                                  -2147483647, // default limit
+                                                  2147483647,  // default limit
+                                                  6,
+                                                  &accepted);
+
+        if (accepted) {
+            appData->parameterService()->setParameter(name,
+                                                      {static_cast<float>(newValue)},
+                                                      client->component,
+                                                      client->system);
+        }
+    }
+
     auto item = _model->itemFromIndex(index);
     auto deb = qDebug().nospace();
-    deb << "Clicked item at " << index.row() << ", " << index.column() << " { ";
+    deb << "Clicked item at L" << level << ", R" << index.row() << ", C" << index.column() << " { ";
     for (const auto [role, name] : _model->roleNames().asKeyValueRange()) {
         deb << name << ": " << item->data(role) << ", ";
     }
@@ -97,13 +141,13 @@ void NetworkDisplay::clientStateChanged(ClientNode::State state)
 
     // update client interaction time
     _model->invisibleRootItem()
-        ->child(clientItem->row(), index(Column::Updated))
+        ->child(clientItem->row(), order(Column::Updated))
         ->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
 
-    const auto stateUpdated = clientItem->child(index(ClientRow::State), index(Column::Updated));
+    const auto stateUpdated = clientItem->child(order(ClientRow::State), order(Column::Updated));
     stateUpdated->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
 
-    const auto stateData = clientItem->child(index(ClientRow::State), index(Column::Data));
+    const auto stateData = clientItem->child(order(ClientRow::State), order(Column::Data));
     stateData->setData(name(state), Qt::DisplayRole);
     stateData->setData(stateColor(state), Qt::DecorationRole);
 }
@@ -133,20 +177,20 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
 
     // update client interaction time
     _model->invisibleRootItem()
-        ->child(clientItem->row(), index(Column::Updated))
+        ->child(clientItem->row(), order(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
 
     const auto directionRow = direction == Direction::Received ? ClientRow::ReceivedMessages
                                                                : ClientRow::SentMessages;
 
     // update time of any message in this direction
-    clientItem->child(index(directionRow), index(Column::Updated))
+    clientItem->child(order(directionRow), order(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
 
-    const auto directionItem = clientItem->child(index(directionRow));
+    const auto directionItem = clientItem->child(order(directionRow));
     std::optional<int> messageRow;
     for (int row = 0; row < directionItem->rowCount(); ++row) {
-        const auto item = directionItem->child(row, index(Column::Name));
+        const auto item = directionItem->child(row, order(Column::Name));
         if (item->data(Qt::DisplayRole) == QString(info->name)) {
             messageRow = row;
         }
@@ -172,7 +216,7 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
         messageNameToId.insert(info->name, message.id());
         int insertRow = 0;
         for (int row = 0; row < directionItem->rowCount(); ++row) {
-            const auto item = directionItem->child(row, index(Column::Name));
+            const auto item = directionItem->child(row, order(Column::Name));
             if (message.id()
                 < messageNameToId.value(item->data(Qt::DisplayRole).toString(), MessageId(0)))
                 break; // shouldn't increase past this row
@@ -184,7 +228,7 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
     }
 
     // update time for this message
-    directionItem->child(*messageRow, index(Column::Updated))
+    directionItem->child(*messageRow, order(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
 
     auto messageItem = directionItem->child(*messageRow);
@@ -205,9 +249,9 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
     for (int row = 0; row < messageItem->rowCount(); ++row) {
         const auto field = info->fields[row];
         const auto data = formatFieldData(mavlinkData(field, message));
-        if (data != messageItem->child(row, index(Column::Data))->data(Qt::DisplayRole)) {
-            messageItem->child(row, index(Column::Data))->setData(data, Qt::DisplayRole);
-            messageItem->child(row, index(Column::Updated))
+        if (data != messageItem->child(row, order(Column::Data))->data(Qt::DisplayRole)) {
+            messageItem->child(row, order(Column::Data))->setData(data, Qt::DisplayRole);
+            messageItem->child(row, order(Column::Updated))
                 ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
         }
     }
@@ -229,37 +273,41 @@ void NetworkDisplay::handleParamValue(ClientNode *client, Message message)
     mavlink_msg_param_value_decode(&message.m, &param_value);
 
     // update parameter header
-    const auto paramsItem = clientItem->child(index(ClientRow::Parameters));
+    const auto paramsItem = clientItem->child(order(ClientRow::Parameters));
+    paramsItem->setData(name(ClientRow::Parameters), Qt::DisplayRole);
     paramsItem->setData(stateColor(ClientNode::State::Connected), Qt::DecorationRole);
-    clientItem->child(index(ClientRow::Parameters), index(Column::Updated))
+    clientItem->child(order(ClientRow::Parameters), order(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
-    clientItem->child(index(ClientRow::Parameters), index(Column::Data))
+    clientItem->child(order(ClientRow::Parameters), order(Column::Data))
         ->setData(QString("Count %1").arg(param_value.param_count), Qt::DisplayRole);
 
     // create empty rows up to index
     while (paramsItem->rowCount() <= param_value.param_index) {
         QList<QStandardItem *> created{};
-        created.push_back(
-            new QStandardItem(QString("(parameter index %1)").arg(paramsItem->rowCount())));
+        created.push_back(new QStandardItem(
+            QString("(unknown parameter at index %1)").arg(paramsItem->rowCount())));
         created.push_back(new QStandardItem(""));
         created.push_back(new QStandardItem(""));
 
         paramsItem->insertRow(paramsItem->rowCount(), created);
     }
 
-    paramsItem->child(param_value.param_index, index(Column::Name))
+    paramsItem->child(param_value.param_index, order(Column::Name))
         ->setData(QString(param_value.param_id), Qt::DisplayRole);
-    paramsItem->child(param_value.param_index, index(Column::Updated))
+    paramsItem->child(param_value.param_index, order(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
-    paramsItem->child(param_value.param_index, index(Column::Data))
-        ->setData(formatFieldData(paramData(param_value.param_value, param_value.param_type)),
-                  Qt::DisplayRole);
+
+    const auto dataItem = paramsItem->child(param_value.param_index, order(Column::Data));
+    // FIXME: Store the initial QVariant instead of QString, format floating point numbers in QML delegate
+    dataItem->setData(formatFieldData(paramData(param_value.param_value, param_value.param_type)),
+                      Qt::DisplayRole);
+    dataItem->setData(true, EditableRole);
 }
 
 QString NetworkDisplay::formatFieldData(QVariant data)
 {
     // the approximate number of significant places is 7.2 for float and 16 for double
-    // roughly approximated from mantissa width as log10(2^24) and log10(2^53)
+    // roughly estimated from mantissa width as log10(2^24) and log10(2^53)
     if (data.metaType() == QMetaType::fromType<float>()) {
         return QString("%1").arg(data.toFloat(), 0, 'f', 6);
     } else if (data.metaType() == QMetaType::fromType<double>()) {
@@ -271,7 +319,7 @@ QString NetworkDisplay::formatFieldData(QVariant data)
 
 QString NetworkDisplay::formatPascalCase(QString pascal)
 {
-    const auto re = QRegularExpression("([a-z])([A-Z])");
+    static const auto re = QRegularExpression("([a-z])([A-Z])");
     return pascal.left(1) + pascal.mid(1).replace(re, R"(\1 \2)").toLower();
 }
 
@@ -283,12 +331,12 @@ QString NetworkDisplay::formatUpdateTime(qint64 timestamp)
         .arg(QString("%1").arg(std::fmod(seconds, 60.0), 0, 'f', 3).rightJustified(6, '0'));
 }
 
-int NetworkDisplay::index(Column value)
+int NetworkDisplay::order(Column value)
 {
     return static_cast<int>(value);
 }
 
-int NetworkDisplay::index(ClientRow value)
+int NetworkDisplay::order(ClientRow value)
 {
     return static_cast<int>(value);
 }

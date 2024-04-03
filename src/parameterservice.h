@@ -2,6 +2,8 @@
 #define PARAMETERSERVICE_H
 
 #include <QObject>
+#include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
+#include "message.h"
 
 class ApplicationData;
 class Router;
@@ -17,6 +19,10 @@ public:
     void setAppData(ApplicationData *appData);
 
     void requestAllParameters();
+    void setParameter(QString id,
+                      QVariant value,
+                      ComponentId component = ComponentId::Broadcast,
+                      SystemId system = SystemId::Broadcast);
 signals:
 
 private slots:
