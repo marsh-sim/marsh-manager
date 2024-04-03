@@ -25,6 +25,7 @@ public:
         State,
         ReceivedMessages,
         SentMessages,
+        Parameters,
     };
     Q_ENUM(ClientRow)
 
@@ -55,6 +56,7 @@ private:
     };
 
     void handleClientMessage(ClientNode *client, Message message, Direction direction);
+    void handleParamValue(ClientNode *client, Message message);
     QString formatFieldData(QVariant data);
     QString formatPascalCase(QString pascal);
 
@@ -67,6 +69,7 @@ private:
 
     QVariant stateColor(ClientNode::State state);
     QVariant mavlinkData(const mavlink_field_info_t &field, const Message &message);
+    QVariant paramData(const float param_value, const uint8_t param_type);
 
     ApplicationData *appData;
     QStandardItemModel *_model;
