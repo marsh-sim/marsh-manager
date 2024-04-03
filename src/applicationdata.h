@@ -21,6 +21,7 @@ public:
     Q_PROPERTY(NetworkDisplay *networkDisplay READ networkDisplay CONSTANT)
     Q_PROPERTY(Logger *logger READ logger CONSTANT)
     Q_PROPERTY(DialectInfo *dialect READ dialect CONSTANT)
+    Q_PROPERTY(ParameterService *parameterService READ parameterService CONSTANT)
 
     Q_PROPERTY(quint8 localSystemId READ localSystemId CONSTANT)
     Q_PROPERTY(quint8 localComponentId READ localComponentId CONSTANT)
@@ -34,6 +35,7 @@ public:
     NetworkDisplay *networkDisplay() const { return _networkDisplay; }
     Logger *logger() const { return _logger; }
     DialectInfo *dialect() const { return _dialect; }
+    ParameterService *parameterService() const { return _parameterService; };
 
     quint8 localSystemId() const;
     quint8 localComponentId() const;
