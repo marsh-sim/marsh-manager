@@ -59,6 +59,12 @@ void NetworkDisplay::addClient(ClientNode *client)
     dataItem = new QStandardItem("");
     clientItem->appendRow({sentItem, updateItem, dataItem});
 
+    auto paramItem = new QStandardItem(name(ClientRow::Parameters));
+    paramItem->setData(stateColor(ClientNode::State::TimedOut), Qt::DecorationRole);
+    updateItem = new QStandardItem("");
+    dataItem = new QStandardItem("");
+    clientItem->appendRow({paramItem, updateItem, dataItem});
+
     connect(client, &ClientNode::stateChanged, this, &NetworkDisplay::clientStateChanged);
     connect(client, &ClientNode::messageReceived, this, &NetworkDisplay::clientMessageReceived);
     connect(client, &ClientNode::messageSent, this, &NetworkDisplay::clientMessageSent);
@@ -205,14 +211,59 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
                 ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
         }
     }
+
+    if (direction == Direction::Received) {
+        switch (message.m.msgid) {
+        case MAVLINK_MSG_ID_PARAM_VALUE:
+            handleParamValue(client, message);
+            break;
+        }
+    }
+}
+
+void NetworkDisplay::handleParamValue(ClientNode *client, Message message)
+{
+    Q_ASSERT(message.id() == MessageId(MAVLINK_MSG_ID_PARAM_VALUE));
+    const auto clientItem = clientItems[client];
+    mavlink_param_value_t param_value;
+    mavlink_msg_param_value_decode(&message.m, &param_value);
+
+    // update parameter header
+    const auto paramsItem = clientItem->child(index(ClientRow::Parameters));
+    paramsItem->setData(stateColor(ClientNode::State::Connected), Qt::DecorationRole);
+    clientItem->child(index(ClientRow::Parameters), index(Column::Updated))
+        ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
+    clientItem->child(index(ClientRow::Parameters), index(Column::Data))
+        ->setData(QString("Count %1").arg(param_value.param_count), Qt::DisplayRole);
+
+    // create empty rows up to index
+    while (paramsItem->rowCount() <= param_value.param_index) {
+        QList<QStandardItem *> created{};
+        created.push_back(
+            new QStandardItem(QString("(parameter index %1)").arg(paramsItem->rowCount())));
+        created.push_back(new QStandardItem(""));
+        created.push_back(new QStandardItem(""));
+
+        paramsItem->insertRow(paramsItem->rowCount(), created);
+    }
+
+    paramsItem->child(param_value.param_index, index(Column::Name))
+        ->setData(QString(param_value.param_id), Qt::DisplayRole);
+    paramsItem->child(param_value.param_index, index(Column::Updated))
+        ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
+    paramsItem->child(param_value.param_index, index(Column::Data))
+        ->setData(formatFieldData(paramData(param_value.param_value, param_value.param_type)),
+                  Qt::DisplayRole);
 }
 
 QString NetworkDisplay::formatFieldData(QVariant data)
 {
+    // the approximate number of significant places is 7.2 for float and 16 for double
+    // roughly approximated from mantissa width as log10(2^24) and log10(2^53)
     if (data.metaType() == QMetaType::fromType<float>()) {
         return QString("%1").arg(data.toFloat(), 0, 'f', 6);
     } else if (data.metaType() == QMetaType::fromType<double>()) {
-        return QString("%1").arg(data.toDouble(), 0, 'f', 6);
+        return QString("%1").arg(data.toDouble(), 0, 'f', 8);
     } else {
         return data.toString();
     }
@@ -319,4 +370,33 @@ QVariant NetworkDisplay::mavlinkData(const mavlink_field_info_t &field, const Me
     qWarning() << "NetworkDisplay::mavlinkData didn't handle MAVLINK_TYPE"
                << static_cast<int>(field.type);
     return {};
+}
+
+QVariant NetworkDisplay::paramData(const float param_value, const uint8_t param_type)
+{
+    mavlink_param_union_t value{param_value, param_type};
+
+    switch (value.type) {
+    case MAV_PARAM_TYPE_UINT8:
+        return value.param_uint8;
+    case MAV_PARAM_TYPE_INT8:
+        return value.param_int8;
+    case MAV_PARAM_TYPE_UINT16:
+        return value.param_uint16;
+    case MAV_PARAM_TYPE_INT16:
+        return value.param_int16;
+    case MAV_PARAM_TYPE_UINT32:
+        return value.param_uint32;
+    case MAV_PARAM_TYPE_INT32:
+        return value.param_int32;
+    case MAV_PARAM_TYPE_REAL32:
+        return value.param_float;
+
+    // these cases are larger than the value field in PARAM_VALUE message
+    case MAV_PARAM_TYPE_UINT64:
+    case MAV_PARAM_TYPE_INT64:
+    case MAV_PARAM_TYPE_REAL64:
+    default:
+        return {};
+    }
 }
