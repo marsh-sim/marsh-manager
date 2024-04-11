@@ -45,6 +45,16 @@ void ClientNode::receiveMessage(Message message)
             _state = firstSysidCompid ? State::Shadowed : State::Connected;
             emit stateChanged(_state);
         }
+
+        // TODO: Define in XML with description:
+        // Request Manager to only send one specific message, for resource limited nodes.
+        // The requested message id should be sent in the lowest three bytes.
+        const quint32 MARSH_MODE_SINGLE_MESSAGE = 0x0100'0000;
+        if (heartbeat.custom_mode & MARSH_MODE_SINGLE_MESSAGE) {
+            singleMessage = MessageId(heartbeat.custom_mode & 0x00FF'FFFF);
+        } else {
+            singleMessage = {};
+        }
     }
 
     emit messageReceived(message);
@@ -52,6 +62,10 @@ void ClientNode::receiveMessage(Message message)
 
 void ClientNode::sendMessage(Message message)
 {
+    if (singleMessage && message.id() != *singleMessage) {
+        return;
+    }
+
     QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
     // message.m.seq = sendingSequenceNumber++; // FIXME: needs to be repacked afterwards, otherwise breaks CRC
     const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(), &message.m);

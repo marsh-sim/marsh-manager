@@ -82,6 +82,7 @@ private:
     State _state;
     /// This is the first *currently* connected client with this system id and component id
     bool firstSysidCompid;
+    std::optional<MessageId> singleMessage;
 
     QTimer *heartbeatTimer = nullptr;
 };
