@@ -54,6 +54,7 @@ public:
     {}
 
     bool operator==(const MessageId &other) const { return _value == other._value; }
+    bool operator!=(const MessageId &other) const { return !(*this == other);}
     bool operator<(const MessageId &other) const { return _value < other._value; }
     QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const MessageId &id);
