@@ -1,4 +1,6 @@
 #include "logger.h"
+#include <QApplication>
+#include <QDialog>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QtEndian>
@@ -52,9 +54,20 @@ void Logger::setSavingNow(bool saving)
 
     if (saving) {
         const auto dateTime = QDateTime::fromMSecsSinceEpoch(Message::currentTime() / 1000);
-        outputFile = new QFile(_outputDir.filePath(formatFilename(dateTime)), this);
+        const QString filePath = _outputDir.filePath(formatFilename(dateTime));
+        outputFile = new QFile(filePath, this);
 
-        Q_ASSERT(outputFile->open(QIODevice::WriteOnly));
+        const auto opened = outputFile->open(QIODevice::WriteOnly);
+        if (!opened) {
+            qCritical() << "Failed to open log file" << outputFile;
+            delete outputFile;
+            outputFile = nullptr;
+
+            QMessageBox::critical(qApp->activeWindow(),
+                                  "Error",
+                                  QString("Could not open log file %1").arg(filePath));
+            return;
+        }
         _bytesWritten = 0;
 
         if (_fileComment.size() > 0) {
