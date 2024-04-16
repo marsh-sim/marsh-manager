@@ -66,6 +66,14 @@ void ClientNode::sendMessage(Message message)
         return;
     }
 
+    if (component == ComponentId(MARSH_COMP_ID_MOTION_PLATFORM)) {
+        const double minInterval = 0.1;
+        const auto lastTime = lastSentMessage[message.id()].timestamp;
+        if (message.timestamp - lastTime < minInterval * 1'000'000) {
+            return;
+        }
+    }
+
     QByteArray send_buffer(MAVLINK_MAX_PACKET_LEN, Qt::Initialization::Uninitialized);
     // message.m.seq = sendingSequenceNumber++; // FIXME: needs to be repacked afterwards, otherwise breaks CRC
     const auto length = mavlink_msg_to_send_buffer((quint8 *) send_buffer.data(), &message.m);
