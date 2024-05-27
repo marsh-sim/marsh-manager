@@ -107,11 +107,19 @@ void ClientNode::autoSubscribe()
         subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL);
         subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_SETPOINT);
         subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_ATTITUDE);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_HIGHRES_IMU);
         break;
     case MARSH_COMP_ID_VISUALISATION:
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_ATTITUDE);
+        break;
     case MARSH_COMP_ID_MOTION_PLATFORM:
     case MARSH_COMP_ID_GSEAT:
         subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_HIGHRES_IMU);
         break;
     }
 }
