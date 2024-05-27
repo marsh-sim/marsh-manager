@@ -38,7 +38,7 @@ void NetworkDisplay::addClient(ClientNode *client)
         QString("Client at %1").arg(client->connection().toString()));
     clientItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
-    auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
+    auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime(), UpdateReason::Created));
     updateItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
     auto dataItem = new QStandardItem(
@@ -142,7 +142,9 @@ void NetworkDisplay::clientStateChanged(ClientNode::State state)
     // update client interaction time
     _model->invisibleRootItem()
         ->child(clientItem->row(), order(Column::Updated))
-        ->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
+        ->setData(formatUpdateTime(Message::currentTime(),
+                                   state == ClientNode::State::TimedOut ? UpdateReason::TimedOut : UpdateReason::StateChanged),
+                  Qt::DisplayRole);
 
     const auto stateUpdated = clientItem->child(order(ClientRow::State), order(Column::Updated));
     stateUpdated->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
@@ -175,10 +177,12 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
     const auto clientItem = clientItems[client];
     const auto info = mavlink_get_message_info(&message.m);
 
-    // update client interaction time
-    _model->invisibleRootItem()
-        ->child(clientItem->row(), order(Column::Updated))
-        ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
+    // update client interaction time only on receive for more intuitive overview
+    if (direction == Direction::Received) {
+        _model->invisibleRootItem()
+            ->child(clientItem->row(), order(Column::Updated))
+            ->setData(formatUpdateTime(message.timestamp, UpdateReason::Received), Qt::DisplayRole);
+    }
 
     const auto directionRow = direction == Direction::Received ? ClientRow::ReceivedMessages
                                                                : ClientRow::SentMessages;
@@ -323,12 +327,26 @@ QString NetworkDisplay::formatPascalCase(QString pascal)
     return pascal.left(1) + pascal.mid(1).replace(re, R"(\1 \2)").toLower();
 }
 
-QString NetworkDisplay::formatUpdateTime(qint64 timestamp)
+QString NetworkDisplay::formatUpdateTime(qint64 timestamp, UpdateReason reason)
 {
     double seconds = (timestamp - startTimestamp) / 1e6;
-    return QString("%1:%2")
+    const auto time = QString("%1:%2")
         .arg(static_cast<int>(std::floor(seconds / 60.0)), 2, 10, QChar('0'))
         .arg(QString("%1").arg(std::fmod(seconds, 60.0), 0, 'f', 3).rightJustified(6, '0'));
+
+    switch (reason) {
+    case UpdateReason::Created:
+        return QString("Cr ") + time;
+    case UpdateReason::Received:
+        return QString("RX ") + time;
+    case UpdateReason::TimedOut:
+        return QString("TO ") + time;
+    case UpdateReason::StateChanged:
+        return QString("SC ") + time;
+    case UpdateReason::None:
+    default:
+        return time;
+    }
 }
 
 int NetworkDisplay::order(Column value)

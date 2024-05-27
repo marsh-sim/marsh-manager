@@ -29,12 +29,21 @@ public:
     };
     Q_ENUM(ClientRow)
 
+    enum class UpdateReason {
+        None,
+        Created,
+        Received,
+        TimedOut,
+        StateChanged,
+    };
+    Q_ENUM(UpdateReason)
+
     explicit NetworkDisplay(QObject *parent = nullptr);
     void setAppData(ApplicationData *appData);
 
     Q_PROPERTY(QStandardItemModel *model READ model CONSTANT)
 
-    Q_INVOKABLE QString formatUpdateTime(qint64 timestamp);
+    Q_INVOKABLE QString formatUpdateTime(qint64 timestamp, UpdateReason reason=UpdateReason::None);
 
     QStandardItemModel *model() const { return _model; }
 
