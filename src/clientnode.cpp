@@ -1,5 +1,8 @@
 #include "clientnode.h"
+#include "applicationdata.h"
+#include "dialectinfo.h"
 #include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
+#include <variant>
 
 ClientNode::ClientNode(
     QObject *parent, Connection connection, SystemId system, ComponentId component, State state)
@@ -19,6 +22,11 @@ ClientNode::ClientNode(
     connect(heartbeatTimer, &QTimer::timeout, this, &ClientNode::heartbeatTimerElapsed);
 
     autoSubscribe();
+}
+
+void ClientNode::setAppData(ApplicationData *appData)
+{
+    this->appData = appData;
 }
 
 void ClientNode::setShadowed(bool shadowed)
@@ -55,6 +63,8 @@ void ClientNode::receiveMessage(Message message)
         } else {
             singleMessage = {};
         }
+    } else if (message.id() == MessageId(MAVLINK_MSG_ID_COMMAND_INT) || message.id() == MessageId(MAVLINK_MSG_ID_COMMAND_LONG)) {
+        handleCommand(message);
     }
 
     emit messageReceived(message);
@@ -87,6 +97,85 @@ void ClientNode::sendMessage(Message message)
 
     lastSentMessage[message.id()] = message;
     emit messageSent(message);
+}
+
+void ClientNode::handleCommand(Message message)
+{
+    SystemId targetSystem = SystemId::Broadcast;
+    ComponentId targetComponent = ComponentId::Broadcast;
+    std::optional<uint8_t> frame;
+    uint16_t command;
+    float param1, param2, param3, param4, param7;
+    std::variant<int32_t, float> param5, param6;
+
+    if (message.id() == MessageId(MAVLINK_MSG_ID_COMMAND_INT)) {
+        mavlink_command_int_t command_int;
+        mavlink_msg_command_int_decode(&message.m, &command_int);
+        targetSystem = SystemId(command_int.target_system);
+        targetComponent = ComponentId(command_int.target_component);
+        frame = command_int.frame;
+        command = command_int.command;
+        param1 = command_int.param1;
+        param2 = command_int.param2;
+        param3 = command_int.param3;
+        param4 = command_int.param4;
+        param5 = command_int.x;
+        param6 = command_int.y;
+        param7 = command_int.z;
+    } else if (message.id() == MessageId(MAVLINK_MSG_ID_COMMAND_LONG)) {
+        mavlink_command_long_t command_long;
+        mavlink_msg_command_long_decode(&message.m, &command_long);
+        targetSystem = SystemId(command_long.target_system);
+        targetComponent = ComponentId(command_long.target_component);
+        command = command_long.command;
+        param1 = command_long.param1;
+        param2 = command_long.param2;
+        param3 = command_long.param3;
+        param4 = command_long.param4;
+        param5 = command_long.param5;
+        param6 = command_long.param6;
+        param7 = command_long.param7;
+    } else {
+        qWarning() << "Incorrect message passed to handleCommand:" << message.id().toString();
+        return;
+    }
+
+    if (targetSystem != system || (targetComponent != component && targetComponent != ComponentId(MARSH_COMP_ID_MANAGER))) {
+        return;
+    }
+
+    uint8_t result = MAV_RESULT_UNSUPPORTED;
+    if (command == MAV_CMD_SET_MESSAGE_INTERVAL) {
+        int id = qRound(param1);
+        int interval = qRound(param2);
+        int target = qRound(param7);
+        if (id >= 0 && id <= 16777215 && interval == 0 && target == 1) {
+            // only allow subscribing to valid message id, with default interval and for the client itself
+            subscribedMessages << MessageId(id);
+            {
+                const auto info = mavlink_get_message_info_by_id(id);
+                const auto compName = appData->dialect()->componentName(component);
+                if (info && compName) {
+                    qDebug().noquote() << "Client in System" << system.toString() << *compName << "subscribed to" << info->name;
+                }
+            }
+            result = MAV_RESULT_ACCEPTED;
+        } else {
+            result = MAV_RESULT_DENIED;
+        }
+    }
+
+    mavlink_command_ack_t ack;
+    ack.command = command;
+    ack.result = result;
+
+    Message reply{Message::currentTime(), {}};
+    mavlink_msg_command_ack_encode_chan(system.value(),
+                                      component.value(),
+                                      MAVLINK_COMM_0,
+                                      &reply.m,
+                                      &ack);
+    sendMessage(reply);
 }
 
 void ClientNode::heartbeatTimerElapsed()

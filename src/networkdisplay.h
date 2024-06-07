@@ -35,6 +35,7 @@ public:
         Received,
         TimedOut,
         StateChanged,
+        HeartbeatReceived,
     };
     Q_ENUM(UpdateReason)
 

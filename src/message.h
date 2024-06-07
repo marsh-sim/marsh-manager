@@ -16,6 +16,7 @@ public:
     static const SystemId Broadcast;
 
     bool operator==(const SystemId &other) const { return _value == other._value; }
+    bool operator!=(const SystemId &other) const { return !(*this == other); }
     bool operator<(const SystemId &other) const { return _value < other._value; }
     QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const SystemId &id);
@@ -36,6 +37,7 @@ public:
     static const ComponentId Broadcast;
 
     bool operator==(const ComponentId &other) const { return _value == other._value; }
+    bool operator!=(const ComponentId &other) const { return !(*this == other); }
     bool operator<(const ComponentId &other) const { return _value < other._value; }
     QString toString() const { return QString("%1").arg(_value); }
     friend int qHash(const ComponentId &id);
