@@ -181,7 +181,9 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
     if (direction == Direction::Received) {
         _model->invisibleRootItem()
             ->child(clientItem->row(), order(Column::Updated))
-            ->setData(formatUpdateTime(message.timestamp, UpdateReason::Received), Qt::DisplayRole);
+            ->setData(formatUpdateTime(message.timestamp,
+                                       message.id() == MessageId(MAVLINK_MSG_ID_HEARTBEAT) ? UpdateReason::HeartbeatReceived : UpdateReason::Received),
+                      Qt::DisplayRole);
     }
 
     const auto directionRow = direction == Direction::Received ? ClientRow::ReceivedMessages
@@ -343,6 +345,8 @@ QString NetworkDisplay::formatUpdateTime(qint64 timestamp, UpdateReason reason)
         return QString("TO ") + time;
     case UpdateReason::StateChanged:
         return QString("SC ") + time;
+    case UpdateReason::HeartbeatReceived:
+        return QString("HB ") + time;
     case UpdateReason::None:
     default:
         return time;

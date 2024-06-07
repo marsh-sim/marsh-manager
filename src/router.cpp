@@ -146,6 +146,7 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
                                     message.senderSystem(),
                                     message.senderComponent(),
                                     state);
+            client->setAppData(appData);
             clients.push_back(client);
             connect(client, &ClientNode::stateChanged, this, &Router::clientStateChanged);
             emit clientAdded(client);

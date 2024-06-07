@@ -7,6 +7,8 @@
 #include <QUdpSocket>
 #include "message.h"
 
+class ApplicationData;
+
 class ClientNode : public QObject
 {
     Q_OBJECT
@@ -44,6 +46,7 @@ public:
                         SystemId system,
                         ComponentId component,
                         State state = State::Connected);
+    void setAppData(ApplicationData *appData);
 
     Q_PROPERTY(Connection connection READ connection CONSTANT)
     Q_PROPERTY(State state READ state NOTIFY stateChanged FINAL)
@@ -75,9 +78,12 @@ private:
     void receiveMessage(Message message);
     void sendMessage(Message message);
 
+    void handleCommand(Message message);
+
     /// subscribe to messages based on component id
     void autoSubscribe();
 
+    ApplicationData* appData;
     Connection _connection;
     State _state;
     /// This is the first *currently* connected client with this system id and component id
