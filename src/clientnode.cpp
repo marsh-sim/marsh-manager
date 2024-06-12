@@ -49,7 +49,7 @@ void ClientNode::receiveMessage(Message message)
 
         heartbeatTimer->start();
 
-        if (_state == State::Unregistered) {
+        if (_state == State::Unregistered || _state == State::TimedOut) {
             _state = firstSysidCompid ? State::Shadowed : State::Connected;
             emit stateChanged(_state);
         }
