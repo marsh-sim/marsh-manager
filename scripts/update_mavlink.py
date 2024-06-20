@@ -3,6 +3,11 @@
 """
 Generates required libraries based on the message definitions in mavlink submodule.
 Doesn't accept any arguments by design.
+
+Requires future package, example of installation:
+```
+pip install future
+```
 """
 
 from os import path, makedirs

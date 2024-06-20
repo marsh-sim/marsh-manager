@@ -1,5 +1,6 @@
 #! /bin/bash
 # based on https://docs.appimage.org/packaging-guide/from-source/native-binaries.html#using-cmake-and-make-install
+# accepts a single argument for build type, by default Release
 
 set -x
 set -e
@@ -44,7 +45,7 @@ pushd "$BUILD_DIR"
 
 # configure build files with CMake
 # we need to explicitly set the install prefix, as CMake's default is /usr/local for some reason...
-cmake "$REPO_ROOT" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Debug
+cmake "$REPO_ROOT" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=${1:-Release}
 
 # build project and install files into AppDir
 make -j$(nproc)
