@@ -76,11 +76,10 @@ void ClientNode::sendMessage(Message message)
         return;
     }
 
-    if (component == ComponentId(MARSH_COMP_ID_MOTION_PLATFORM)) {
-        const double minInterval = 0.1;
+    if (messageLimitIntervals.contains(message.id())) {
         const auto lastTime = lastSentMessage[message.id()].timestamp;
-        if (message.timestamp - lastTime < minInterval * 1'000'000) {
-            return;
+        if (message.timestamp - lastTime < messageLimitIntervals[message.id()]) {
+            return; // too soon to send this one
         }
     }
 
@@ -144,24 +143,47 @@ void ClientNode::handleCommand(Message message)
         return;
     }
 
-    uint8_t result = MAV_RESULT_UNSUPPORTED;
+    uint8_t result = MAV_RESULT_UNSUPPORTED; // assume command not recognized
     if (command == MAV_CMD_SET_MESSAGE_INTERVAL) {
-        int id = qRound(param1);
-        int interval = qRound(param2);
+        result = MAV_RESULT_DENIED; // assume parameters not accepted
+        qint32 id_num = qRound(param1);
+        qint64 interval = qRound(param2);
         int target = qRound(param7);
-        if (id >= 0 && id <= 16777215 && interval == 0 && target == 1) {
-            // only allow subscribing to valid message id, with default interval and for the client itself
-            subscribedMessages << MessageId(id);
-            {
-                const auto info = mavlink_get_message_info_by_id(id);
+        if (id_num >= 0 && id_num <= 16777215 && target == 1) {
+            // only allow subscribing to valid message id and for the client itself
+
+            MessageId id{static_cast<uint32_t>(id_num)};
+            if (interval == -1) {
+                subscribedMessages.remove(id);
+                messageLimitIntervals.remove(id);
+                result = MAV_RESULT_ACCEPTED;
+            } else if (interval == 0) {
+                subscribedMessages.insert(id);
+                messageLimitIntervals.remove(id);
+                result = MAV_RESULT_ACCEPTED;
+            } else if (interval > 0) {
+                subscribedMessages.insert(id);
+                messageLimitIntervals.insert(id, interval);
+                result = MAV_RESULT_ACCEPTED;
+            }
+
+            { // debug print
+                const auto info = mavlink_get_message_info_by_id(id_num);
                 const auto compName = appData->dialect()->componentName(component);
                 if (info && compName) {
-                    qDebug().noquote() << "Client in System" << system.toString() << *compName << "subscribed to" << info->name;
+                    auto deb = qDebug().noquote() << "Client in System" << system.toString() << *compName;
+                    if (result != MAV_RESULT_ACCEPTED) {
+                        deb << "failed to setup";
+                    } else if (interval == -1) {
+                        deb << "unsubscribed from";
+                    } else if (interval == 0) {
+                        deb << "subscribed to";
+                    } else {
+                        deb << "limited rate to" << interval << "us for";
+                    }
+                    deb << info->name;
                 }
             }
-            result = MAV_RESULT_ACCEPTED;
-        } else {
-            result = MAV_RESULT_DENIED;
         }
     }
 
