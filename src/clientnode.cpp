@@ -209,6 +209,7 @@ void ClientNode::autoSubscribe()
     case MARSH_COMP_ID_GSEAT:
         subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
         subscribedMessages << MessageId(MAVLINK_MSG_ID_HIGHRES_IMU);
+        subscribedMessages << MessageId(MAVLINK_MSG_ID_MOTION_CUE_EXTRA);
         break;
     }
 }
