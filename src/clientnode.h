@@ -60,7 +60,10 @@ public:
 
     QMap<MessageId, Message> lastReceivedMessage;
     QMap<MessageId, Message> lastSentMessage;
+    /// Messages that this client is interested in receiving
     QSet<MessageId> subscribedMessages;
+    /// Messages with sending rate limited, minimal interval in microseconds
+    QMap<MessageId, qint64> messageLimitIntervals;
     quint8 sendingSequenceNumber = 0;
 
 signals:
