@@ -1,0 +1,60 @@
+name: Linux Release
+
+on:
+  push:
+    branches:
+      - "dev"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SOURCE_DIR: ${{ github.workspace }}
+  ARTIFACT: marsh-mgr.AppImage
+  QT_VERSION: 6.5
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Generate MAVLink dialect
+        run: |
+          pip3 install future
+          python3 ${{ env.SOURCE_DIR }}/scripts/update_mavlink.py
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: gcc_64
+          dir: ${{ runner.temp }}
+          setup-python: false
+
+      - name: Install AppImage prerequisites
+        run: sudo apt install libfuse2
+
+      - name: Install LinuxDeploy
+        uses: miurahr/install-linuxdeploy-action@v1
+        with:
+          plugins: qt appimage
+          dir: ${{ github.workspace }}/tools
+
+      - name: Build AppImage
+        run: |
+          cp ${{ github.workspace }}/tools/linuxdeploy-x86_64.AppImage ${{ github.workspace }}/tools/linuxdeploy
+          Qt6_DIR=${QT_ROOT_DIR} PATH=${{ github.workspace }}/tools:$PATH ./scripts/build_appimage.sh
+
+      - name: Linux artefact
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: ${{ env.SOURCE_DIR }}/MARSH_Manager-x86_64.AppImage
