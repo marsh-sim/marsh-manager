@@ -50,8 +50,8 @@ void NetworkDisplay::addClient(ClientNode *client)
         QString("System %1 %2").arg(client->system.toString(), name(client->component)));
     dataItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
-    root->appendRow({clientItem, updateItem, frequencyItem, dataItem});
     clientItems[client] = clientItem;
+    root->appendRow({clientItem, updateItem, frequencyItem, dataItem});
 
     auto stateItem = new QStandardItem(name(ClientRow::State));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));

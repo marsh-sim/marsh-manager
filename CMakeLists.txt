@@ -65,7 +65,8 @@ qt_add_qml_module(
   SOURCES
   src/parameterservice.h
   src/parameterservice.cpp
-  SOURCES src/frequencyestimator.h src/frequencyestimator.cpp)
+  SOURCES src/frequencyestimator.h src/frequencyestimator.cpp
+  SOURCES src/networkdisplayproxy.h src/networkdisplayproxy.cpp)
 
 qt_add_resources(appmarsh-manager "app_text" PREFIX "/" FILES LICENSE.txt)
 

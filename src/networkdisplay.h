@@ -40,6 +40,8 @@ public:
     };
     Q_ENUM(UpdateReason)
 
+    friend class NetworkDisplayProxy;
+
     explicit NetworkDisplay(QObject *parent = nullptr);
     void setAppData(ApplicationData *appData);
 
