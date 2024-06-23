@@ -6,6 +6,7 @@
 #include "heartbeatservice.h"
 #include "logger.h"
 #include "networkdisplay.h"
+#include "networkdisplayproxy.h"
 #include "parameterservice.h"
 #include "router.h"
 
@@ -19,6 +20,7 @@ public:
 
     Q_PROPERTY(Router* router READ router CONSTANT)
     Q_PROPERTY(NetworkDisplay *networkDisplay READ networkDisplay CONSTANT)
+    Q_PROPERTY(NetworkDisplayProxy *displayModel READ displayModel CONSTANT)
     Q_PROPERTY(Logger *logger READ logger CONSTANT)
     Q_PROPERTY(DialectInfo *dialect READ dialect CONSTANT)
     Q_PROPERTY(ParameterService *parameterService READ parameterService CONSTANT)
@@ -33,6 +35,7 @@ public:
 
     Router *router() const { return _router; }
     NetworkDisplay *networkDisplay() const { return _networkDisplay; }
+    NetworkDisplayProxy *displayModel() const { return _displayModel; }
     Logger *logger() const { return _logger; }
     DialectInfo *dialect() const { return _dialect; }
     ParameterService *parameterService() const { return _parameterService; };
@@ -51,6 +54,7 @@ private:
     Router* _router;
     Logger *_logger;
     NetworkDisplay *_networkDisplay;
+    NetworkDisplayProxy *_displayModel;
     DialectInfo *_dialect;
 
     // microservice providers

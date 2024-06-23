@@ -3,10 +3,32 @@ import QtQuick.Controls.Fusion
 import QtQuick.Layouts
 
 Item {
+    Flow {
+        id: buttonRow
+
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+        spacing: 10
+
+        Button {
+            text: qsTr("Hide timed out clients")
+            onClicked: appData.displayModel.hideCurrentlyTimedOut()
+        }
+
+        Button {
+            text: qsTr("Show %n hidden client(s)", "",
+                       appData.displayModel.hiddenClientCount)
+            enabled: appData.displayModel.hiddenClientCount
+            onClicked: appData.displayModel.showAllClients()
+        }
+    }
+
     HorizontalHeaderView {
         id: horizontalHeader
         anchors.left: treeView.left
-        anchors.top: parent.top
+        anchors.top: buttonRow.bottom
         syncView: treeView
         clip: true
     }
@@ -19,7 +41,7 @@ Item {
         anchors.bottom: parent.bottom
         clip: true
 
-        model: appData.networkDisplay.model
+        model: appData.displayModel
 
         delegate: TreeViewDelegate {
             contentItem: Text {

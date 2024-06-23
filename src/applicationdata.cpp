@@ -8,6 +8,7 @@ ApplicationData::ApplicationData(QObject *parent)
 {
     _router = new Router(this);
     _networkDisplay = new NetworkDisplay(this);
+    _displayModel = new NetworkDisplayProxy(this);
     _logger = new Logger(this);
     _heartbeatService = new HeartbeatService(this);
     _parameterService = new ParameterService(this);
@@ -16,6 +17,7 @@ ApplicationData::ApplicationData(QObject *parent)
     // pass this reference again when all children are constructed
     _router->setAppData(this);
     _networkDisplay->setAppData(this);
+    _displayModel->setAppData(this);
     _logger->setAppData(this);
     _heartbeatService->setAppData(this);
     _parameterService->setAppData(this);
