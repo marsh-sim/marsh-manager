@@ -30,6 +30,7 @@ Item {
                        ?? "") + (highlight ? " (click to edit)" : "")
                 color: model.decoration ?? palette.text
                 font.bold: highlight
+                horizontalAlignment: (model.textAlign ?? Text.AlignLeft)
             }
 
             onClicked: appData.networkDisplay.itemClicked(treeView.index(

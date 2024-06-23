@@ -64,7 +64,8 @@ qt_add_qml_module(
   src/dialectinfo.cpp
   SOURCES
   src/parameterservice.h
-  src/parameterservice.cpp)
+  src/parameterservice.cpp
+  SOURCES src/frequencyestimator.h src/frequencyestimator.cpp)
 
 qt_add_resources(appmarsh-manager "app_text" PREFIX "/" FILES LICENSE.txt)
 
