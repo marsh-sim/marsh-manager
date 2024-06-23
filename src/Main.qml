@@ -30,10 +30,11 @@ ApplicationWindow {
         return bytes.toString().slice(0, 4) + prefix[order] + 'B'
     }
 
-    ColumnLayout {
+    Column {
         id: statusBar
         anchors.top: parent.top
         anchors.left: parent.left
+        anchors.right: parent.right
         anchors.margins: 10
         spacing: 10
 
@@ -88,7 +89,12 @@ ApplicationWindow {
             }
         }
 
-        RowLayout {
+        Flow {
+            anchors.left: parent.left
+            anchors.right: parent.right
+
+            spacing: 10
+
             Button {
                 text: qsTr("Save data")
                 enabled: !appData.logger.savingNow
@@ -123,8 +129,13 @@ ApplicationWindow {
             }
         }
 
-        RowLayout {
+        Flow {
             visible: saveLimitedTime.checked
+
+            anchors.left: parent.left
+            anchors.right: parent.right
+
+            spacing: 10
 
             Text {
                 text: qsTr("Save time (in seconds):")
