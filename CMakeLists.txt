@@ -170,3 +170,8 @@ install(
   BUNDLE DESTINATION .
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # Triggered a lot in MAVLink headers
+  target_compile_options(appmarsh-manager PRIVATE -Wno-address-of-packed-member)
+endif()
