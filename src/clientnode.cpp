@@ -41,7 +41,12 @@ void ClientNode::setShadowed(bool shadowed)
 
 void ClientNode::receiveMessage(Message message)
 {
-    lastReceivedMessage[message.id()] = message;
+    receiveFrequency.addTime(message.timestamp);
+    if (!receivedMessages.contains(message.id())) {
+        receivedMessages[message.id()] = MessageHistory{message, FrequencyEstimator{}};
+    }
+    receivedMessages[message.id()].last = message;
+    receivedMessages[message.id()].frequency.addTime(message.timestamp);
 
     if (message.id() == MessageId(MAVLINK_MSG_ID_HEARTBEAT)) {
         mavlink_heartbeat_t heartbeat;
@@ -54,7 +59,6 @@ void ClientNode::receiveMessage(Message message)
             emit stateChanged(_state);
         }
 
-        // TODO: Define in XML with description:
         // Request Manager to only send one specific message, for resource limited nodes.
         // The requested message id should be sent in the lowest three bytes.
         const quint32 MARSH_MODE_SINGLE_MESSAGE = 0x0100'0000;
@@ -77,7 +81,7 @@ void ClientNode::sendMessage(Message message)
     }
 
     if (messageLimitIntervals.contains(message.id())) {
-        const auto lastTime = lastSentMessage[message.id()].timestamp;
+        const auto lastTime = sentMessages[message.id()].last.timestamp;
         if (message.timestamp - lastTime < messageLimitIntervals[message.id()]) {
             return; // too soon to send this one
         }
@@ -94,7 +98,14 @@ void ClientNode::sendMessage(Message message)
         qDebug() << "Error sending to" << _connection.port;
     }
 
-    lastSentMessage[message.id()] = message;
+    const auto sendTime = Message::currentTime(); // take the time now to include in-app delays
+    sendFrequency.addTime(sendTime);
+    if (!sentMessages.contains(message.id())) {
+        sentMessages[message.id()] = MessageHistory{message, FrequencyEstimator{}};
+    }
+    sentMessages[message.id()].last = message;
+    sentMessages[message.id()].frequency.addTime(sendTime);
+
     emit messageSent(message);
 }
 

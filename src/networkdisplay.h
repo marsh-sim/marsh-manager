@@ -16,6 +16,7 @@ public:
     enum class Column : int {
         Name,
         Updated,
+        Frequency,
         Data,
     };
     Q_ENUM(Column)

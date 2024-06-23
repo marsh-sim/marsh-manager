@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QTimer>
 #include <QUdpSocket>
+#include "frequencyestimator.h"
 #include "message.h"
 
 class ApplicationData;
@@ -58,8 +59,16 @@ public:
 
     void setShadowed(bool shadowed);
 
-    QMap<MessageId, Message> lastReceivedMessage;
-    QMap<MessageId, Message> lastSentMessage;
+    struct MessageHistory
+    {
+        Message last;
+        FrequencyEstimator frequency;
+    };
+
+    FrequencyEstimator receiveFrequency{};
+    FrequencyEstimator sendFrequency{};
+    QMap<MessageId, MessageHistory> receivedMessages;
+    QMap<MessageId, MessageHistory> sentMessages;
     /// Messages that this client is interested in receiving
     QSet<MessageId> subscribedMessages;
     /// Messages with sending rate limited, minimal interval in microseconds

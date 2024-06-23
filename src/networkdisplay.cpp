@@ -14,6 +14,7 @@ NetworkDisplay::NetworkDisplay(QObject *parent)
 {
     _model = new QStandardItemModel(this);
     auto roleNames = _model->roleNames();
+    roleNames[Qt::TextAlignmentRole] = "textAlign";
     roleNames[EditableRole] = "editable";
     _model->setItemRoleNames(roleNames);
 
@@ -40,34 +41,49 @@ void NetworkDisplay::addClient(ClientNode *client)
 
     auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime(), UpdateReason::Created));
     updateItem->setData(stateColor(client->state()), Qt::DecorationRole);
+    updateItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+
+    auto frequencyItem = new QStandardItem("");
+    frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
 
     auto dataItem = new QStandardItem(
         QString("System %1 %2").arg(client->system.toString(), name(client->component)));
     dataItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
-    root->appendRow({clientItem, updateItem, dataItem});
+    root->appendRow({clientItem, updateItem, frequencyItem, dataItem});
     clientItems[client] = clientItem;
 
     auto stateItem = new QStandardItem(name(ClientRow::State));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
+    updateItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+    frequencyItem = new QStandardItem("");
+    frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem(name(client->state()));
     dataItem->setData(stateColor(client->state()), Qt::DecorationRole);
-    clientItem->appendRow({stateItem, updateItem, dataItem});
+    clientItem->appendRow({stateItem, updateItem, frequencyItem, dataItem});
 
     auto receivedItem = new QStandardItem(name(ClientRow::ReceivedMessages));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
+    updateItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+    frequencyItem = new QStandardItem("");
+    frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem("");
-    clientItem->appendRow({receivedItem, updateItem, dataItem});
+    clientItem->appendRow({receivedItem, updateItem, frequencyItem, dataItem});
 
     auto sentItem = new QStandardItem(name(ClientRow::SentMessages));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
+    updateItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+    frequencyItem = new QStandardItem("");
+    frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem("");
-    clientItem->appendRow({sentItem, updateItem, dataItem});
+    clientItem->appendRow({sentItem, updateItem, frequencyItem, dataItem});
 
     auto paramItem = new QStandardItem(QString("No parameters"));
     paramItem->setData(stateColor(ClientNode::State::TimedOut), Qt::DecorationRole);
     updateItem = new QStandardItem("");
+    updateItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem("");
+    frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     clientItem->appendRow({paramItem, updateItem, dataItem});
 
     connect(client, &ClientNode::stateChanged, this, &NetworkDisplay::clientStateChanged);
@@ -184,14 +200,23 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
             ->setData(formatUpdateTime(message.timestamp,
                                        message.id() == MessageId(MAVLINK_MSG_ID_HEARTBEAT) ? UpdateReason::HeartbeatReceived : UpdateReason::Received),
                       Qt::DisplayRole);
+        _model->invisibleRootItem()
+            ->child(clientItem->row(), order(Column::Frequency))
+            ->setData(client->receiveFrequency.formatFrequency(), Qt::DisplayRole);
     }
 
     const auto directionRow = direction == Direction::Received ? ClientRow::ReceivedMessages
                                                                : ClientRow::SentMessages;
+    const auto directionFrequency = direction == Direction::Received ? client->receiveFrequency
+                                                                     : client->sendFrequency;
+    const auto directionHistory = direction == Direction::Received ? client->receivedMessages
+                                                                   : client->sentMessages;
 
     // update time of any message in this direction
     clientItem->child(order(directionRow), order(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
+    clientItem->child(order(directionRow), order(Column::Frequency))
+        ->setData(directionFrequency.formatFrequency(), Qt::DisplayRole);
 
     const auto directionItem = clientItem->child(order(directionRow));
     std::optional<int> messageRow;
@@ -206,15 +231,19 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
         QList<QStandardItem *> created{};
         created.push_back(new QStandardItem(info->name));
         created.push_back(new QStandardItem(""));
+        created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+        created.push_back(new QStandardItem(""));
+        created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
         created.push_back(new QStandardItem(QString("id: ") + message.id().toString()));
+        Q_ASSERT(created.size() == QMetaEnum::fromType<Column>().keyCount());
 
         // show the message source for sent messages
         if (direction == Direction::Sent) {
             auto dataItem = created.last();
             dataItem->setData(dataItem->data(Qt::DisplayRole).toString()
                                   + QString(", from system %1 %2")
-                                        .arg(message.senderSystem().toString())
-                                        .arg(name(message.senderComponent())),
+                                        .arg(message.senderSystem().toString(),
+                                             name(message.senderComponent())),
                               Qt::DisplayRole);
         }
 
@@ -236,6 +265,8 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
     // update time for this message
     directionItem->child(*messageRow, order(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
+    directionItem->child(*messageRow, order(Column::Frequency))
+        ->setData(directionHistory[message.id()].frequency.formatFrequency(), Qt::DisplayRole);
 
     auto messageItem = directionItem->child(*messageRow);
     if (!messageItem->hasChildren()) {
@@ -245,7 +276,11 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
             const auto field = info->fields[row];
             created.push_back(new QStandardItem(field.name));
             created.push_back(new QStandardItem(formatUpdateTime(message.timestamp)));
+            created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+            created.push_back(new QStandardItem(""));
+            created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
             created.push_back(new QStandardItem(mavlinkData(field, message).toString()));
+            Q_ASSERT(created.size() == QMetaEnum::fromType<Column>().keyCount());
 
             messageItem->appendRow(created);
         }
@@ -293,7 +328,11 @@ void NetworkDisplay::handleParamValue(ClientNode *client, Message message)
         created.push_back(new QStandardItem(
             QString("(unknown parameter at index %1)").arg(paramsItem->rowCount())));
         created.push_back(new QStandardItem(""));
+        created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
         created.push_back(new QStandardItem(""));
+        created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+        created.push_back(new QStandardItem(""));
+        Q_ASSERT(created.size() == QMetaEnum::fromType<Column>().keyCount());
 
         paramsItem->insertRow(paramsItem->rowCount(), created);
     }
