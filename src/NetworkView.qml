@@ -27,7 +27,7 @@ Item {
                                                   && hovered
 
                 text: (model.display
-                       ?? "") + (highlight ? " (click to edit)" : "")
+                       ?? "") + (highlight ? qsTr(" (click to edit)") : "")
                 color: model.decoration ?? palette.text
                 font.bold: highlight
                 horizontalAlignment: (model.textAlign ?? Text.AlignLeft)
