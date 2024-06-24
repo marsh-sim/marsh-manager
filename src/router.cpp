@@ -75,23 +75,19 @@ void Router::clientStateChanged(ClientNode::State state)
 {
     const auto oldComponents = connectedComponents();
 
-    if (state == ClientNode::State::TimedOut) {
-        // some client previously shadowed may be the first component now
+    using SysComp = QPair<SystemId, ComponentId>;
+    QSet<SysComp> connected_sys_comp{};
 
-        using SysComp = QPair<SystemId, ComponentId>;
-        QSet<SysComp> connected_sys_comp{};
+    for (auto client : clients) { // iterate in order of connecting
+        if (client->state() == ClientNode::State::TimedOut)
+            continue;
 
-        for (auto client : clients) { // iterate in order of connecting
-            if (client->state() == ClientNode::State::TimedOut)
-                continue;
-
-            SysComp sys_comp{client->system, client->component};
-            if (!connected_sys_comp.contains(sys_comp)) {
-                client->setShadowed(false);
-                connected_sys_comp.insert(sys_comp);
-            } else {
-                client->setShadowed(true);
-            }
+        SysComp sys_comp{client->system, client->component};
+        if (!connected_sys_comp.contains(sys_comp)) {
+            client->setShadowed(false);
+            connected_sys_comp.insert(sys_comp);
+        } else {
+            client->setShadowed(true);
         }
     }
 
