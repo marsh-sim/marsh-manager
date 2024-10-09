@@ -31,12 +31,14 @@ void ClientNode::setAppData(ApplicationData *appData)
 
 void ClientNode::setShadowed(bool shadowed)
 {
-    firstSysidCompid = shadowed;
-    if (_state == State::Connected || _state == State::Shadowed) {
-        _state = firstSysidCompid ? State::Shadowed : State::Connected;
-        emit stateChanged(_state);
+    if (shadowed != firstSysidCompid) {
+        firstSysidCompid = shadowed;
+        if (_state == State::Connected || _state == State::Shadowed) {
+            _state = firstSysidCompid ? State::Shadowed : State::Connected;
+            emit stateChanged(_state);
+        }
+        emit shadowedChanged(this->shadowed());
     }
-    emit shadowedChanged(this->shadowed());
 }
 
 void ClientNode::receiveMessage(Message message)
@@ -61,7 +63,6 @@ void ClientNode::receiveMessage(Message message)
 
         // Request Manager to only send one specific message, for resource limited nodes.
         // The requested message id should be sent in the lowest three bytes.
-        const quint32 MARSH_MODE_SINGLE_MESSAGE = 0x0100'0000;
         if (heartbeat.custom_mode & MARSH_MODE_SINGLE_MESSAGE) {
             singleMessage = MessageId(heartbeat.custom_mode & 0x00FF'FFFF);
         } else {
