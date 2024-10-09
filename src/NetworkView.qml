@@ -55,8 +55,7 @@ Item {
                 horizontalAlignment: (model.textAlign ?? Text.AlignLeft)
             }
 
-            onClicked: appData.networkDisplay.itemClicked(treeView.index(
-                                                              row, column))
+            onClicked: treeView.model.itemClicked(treeView.index(row, column))
 
             TapHandler {
                 acceptedModifiers: Qt.ControlModifier

@@ -25,6 +25,9 @@ public:
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
 
+public slots:
+    void itemClicked(const QModelIndex &index);
+
 private slots:
     /// Show clients that come back from being timed out
     void checkHiddenClients();

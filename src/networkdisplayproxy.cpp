@@ -64,6 +64,11 @@ bool NetworkDisplayProxy::filterAcceptsRow(int sourceRow, const QModelIndex &sou
     return !hidden.contains(client);
 }
 
+void NetworkDisplayProxy::itemClicked(const QModelIndex &index)
+{
+    _networkDisplay->itemClicked(mapToSource(index));
+}
+
 void NetworkDisplayProxy::checkHiddenClients()
 {
     bool hiddenChanged = false;

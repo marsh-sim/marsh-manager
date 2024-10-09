@@ -82,9 +82,10 @@ void NetworkDisplay::addClient(ClientNode *client)
     paramItem->setData(stateColor(ClientNode::State::TimedOut), Qt::DecorationRole);
     updateItem = new QStandardItem("");
     updateItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
-    dataItem = new QStandardItem("");
+    frequencyItem = new QStandardItem("");
     frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
-    clientItem->appendRow({paramItem, updateItem, dataItem});
+    dataItem = new QStandardItem("");
+    clientItem->appendRow({paramItem, updateItem, frequencyItem, dataItem});
 
     connect(client, &ClientNode::stateChanged, this, &NetworkDisplay::clientStateChanged);
     connect(client, &ClientNode::messageReceived, this, &NetworkDisplay::clientMessageReceived);
@@ -103,10 +104,8 @@ void NetworkDisplay::itemClicked(const QModelIndex &index)
     // handle parameter value
     if (level == 2 && index.parent().row() == order(ClientRow::Parameters)
         && index.column() == order(Column::Data)) {
-        const auto name = _model->itemFromIndex(index.siblingAtColumn(order(Column::Name)))
-                              ->data(Qt::DisplayRole)
-                              .toString();
-        const auto valueText = _model->itemFromIndex(index)->data(Qt::DisplayRole).toString();
+        const auto name = index.siblingAtColumn(order(Column::Name)).data(Qt::DisplayRole).toString();
+        const auto valueText = index.data(Qt::DisplayRole).toString();
         const auto client = clientItems.key(_model->itemFromIndex(index.parent().parent()), nullptr);
         Q_ASSERT_X(client,
                    "NetworkDisplay::itemClicked",
