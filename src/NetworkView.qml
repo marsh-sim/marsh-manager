@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Fusion
 import QtQuick.Layouts
+import Qt.labs.qmlmodels
 
 Item {
     Flow {
@@ -42,28 +43,48 @@ Item {
         clip: true
 
         model: appData.displayModel
+        delegate: chooser
 
-        delegate: TreeViewDelegate {
-            contentItem: Text {
-                readonly property bool highlight: (model.editable ?? false)
-                                                  && hovered
-
-                text: (model.display
-                       ?? "") + (highlight ? qsTr(" (click to edit)") : "")
-                color: model.decoration ?? palette.text
-                font.bold: highlight
-                horizontalAlignment: (model.textAlign ?? Text.AlignLeft)
+        DelegateChooser {
+            id: chooser
+            role: "editable"
+            DelegateChoice {
+                roleValue: "true"
+                TreeViewDelegate {
+                    contentItem: Button {
+                        contentItem: Text {
+                            text: (model.display ?? "")
+                            color: model.decoration ?? palette.buttonText
+                            horizontalAlignment: (model.textAlign
+                                                  ?? Text.Center)
+                        }
+                        onClicked: treeView.model.itemClicked(treeView.index(
+                                                                  row, column))
+                    }
+                }
             }
 
-            onClicked: treeView.model.itemClicked(treeView.index(row, column))
+            DelegateChoice {
+                // default
+                TreeViewDelegate {
+                    contentItem: Text {
+                        text: (model.display ?? "")
+                        color: model.decoration ?? palette.text
+                        horizontalAlignment: (model.textAlign ?? Text.AlignLeft)
+                    }
 
-            TapHandler {
-                acceptedModifiers: Qt.ControlModifier
-                onTapped: {
-                    if (treeView.isExpanded(row))
-                        treeView.collapseRecursively(row)
-                    else
-                        treeView.expandRecursively(row)
+                    onClicked: treeView.model.itemClicked(treeView.index(
+                                                              row, column))
+
+                    TapHandler {
+                        acceptedModifiers: Qt.ControlModifier
+                        onTapped: {
+                            if (treeView.isExpanded(row))
+                                treeView.collapseRecursively(row)
+                            else
+                                treeView.expandRecursively(row)
+                        }
+                    }
                 }
             }
         }
