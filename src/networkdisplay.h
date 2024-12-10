@@ -27,6 +27,7 @@ public:
         ReceivedMessages,
         SentMessages,
         Parameters,
+        SubscribedMessages,
     };
     Q_ENUM(ClientRow)
 
@@ -57,10 +58,11 @@ public slots:
     void itemClicked(const QModelIndex &index);
 
 private slots:
-    void addClient(ClientNode *client);
+    void addClient(ClientNode *const client);
     void clientStateChanged(ClientNode::State state);
     void clientMessageReceived(Message message);
     void clientMessageSent(Message message);
+    void clientSubscriptionsChanged(QSet<MessageId> subs);
 
 private:
     enum class Direction {
@@ -72,8 +74,9 @@ private:
         EditableRole = Qt::UserRole,
     };
 
-    void handleClientMessage(ClientNode *client, Message message, Direction direction);
-    void handleParamValue(ClientNode *client, Message message);
+    void handleClientMessage(ClientNode *const client, Message message, Direction direction);
+    void handleParamValue(ClientNode *const client, Message message);
+    void updateSubscribed(ClientNode *const client);
     QString formatFieldData(QVariant data);
     QString formatPascalCase(QString pascal);
 

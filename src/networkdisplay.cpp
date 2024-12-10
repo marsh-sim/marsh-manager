@@ -32,7 +32,7 @@ void NetworkDisplay::setAppData(ApplicationData *appData)
     connect(appData->router(), &Router::clientAdded, this, &NetworkDisplay::addClient);
 }
 
-void NetworkDisplay::addClient(ClientNode *client)
+void NetworkDisplay::addClient(ClientNode *const client)
 {
     auto root = _model->invisibleRootItem();
     auto clientItem = new QStandardItem(
@@ -87,9 +87,21 @@ void NetworkDisplay::addClient(ClientNode *client)
     dataItem = new QStandardItem("");
     clientItem->appendRow({paramItem, updateItem, frequencyItem, dataItem});
 
+    auto subscribeItem = new QStandardItem(name(ClientRow::SubscribedMessages));
+    updateItem = new QStandardItem("");
+    updateItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+    frequencyItem = new QStandardItem("");
+    frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+    dataItem = new QStandardItem("");
+    clientItem->appendRow({subscribeItem, updateItem, frequencyItem, dataItem});
+    updateSubscribed(client);
+
+    // clang-format off
     connect(client, &ClientNode::stateChanged, this, &NetworkDisplay::clientStateChanged);
     connect(client, &ClientNode::messageReceived, this, &NetworkDisplay::clientMessageReceived);
     connect(client, &ClientNode::messageSent, this, &NetworkDisplay::clientMessageSent);
+    connect(client, &ClientNode::subscribedMessagesChanged, this, &NetworkDisplay::clientSubscriptionsChanged);
+    // clang-format on
 }
 
 void NetworkDisplay::itemClicked(const QModelIndex &index)
@@ -169,6 +181,16 @@ void NetworkDisplay::clientStateChanged(ClientNode::State state)
     stateData->setData(stateColor(state), Qt::DecorationRole);
 }
 
+void NetworkDisplay::clientSubscriptionsChanged(QSet<MessageId> subs)
+{
+    // HACK: getting sender is not recommended, won't bee needed after rework to QAbstractModel
+    auto sender = qobject_cast<ClientNode *>(QObject::sender());
+    Q_ASSERT_X(sender,
+               "NetworkDisplay::clientSubscriptionsChanged",
+               "this signal must be sent by a client");
+    updateSubscribed(sender);
+}
+
 void NetworkDisplay::clientMessageReceived(Message message)
 {
     // HACK: getting sender is not recommended, won't bee needed after rework to QAbstractModel
@@ -187,7 +209,9 @@ void NetworkDisplay::clientMessageSent(Message message)
     handleClientMessage(sender, message, Direction::Sent);
 }
 
-void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Direction direction)
+void NetworkDisplay::handleClientMessage(ClientNode *const client,
+                                         Message message,
+                                         Direction direction)
 {
     const auto clientItem = clientItems[client];
     const auto info = mavlink_get_message_info(&message.m);
@@ -305,7 +329,7 @@ void NetworkDisplay::handleClientMessage(ClientNode *client, Message message, Di
     }
 }
 
-void NetworkDisplay::handleParamValue(ClientNode *client, Message message)
+void NetworkDisplay::handleParamValue(ClientNode *const client, Message message)
 {
     Q_ASSERT(message.id() == MessageId(MAVLINK_MSG_ID_PARAM_VALUE));
     const auto clientItem = clientItems[client];
@@ -348,6 +372,99 @@ void NetworkDisplay::handleParamValue(ClientNode *client, Message message)
     dataItem->setData(true, EditableRole);
 }
 
+void NetworkDisplay::updateSubscribed(ClientNode *const client)
+{
+    const auto clientItem = clientItems.value(client);
+    const auto subscribeItem = clientItem->child(order(ClientRow::SubscribedMessages),
+                                                 order(Column::Name));
+    const auto subs = client->subscribedMessages();
+
+    clientItem->child(subscribeItem->row(), order(Column::Updated))
+        ->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
+
+    const auto customModeReason = QString("Due to custom_mode");
+    const auto componentReason = QString("Due to component id");
+    const auto subscribedReason = QString("Subscribed with command");
+    const auto unsubscribedReason = QString("Unsubscribed with command");
+
+    // No point in displaying all possible messages, simplify
+    if (client->customMode() == ClientNode::CustomMode::AllMessages) {
+        subscribeItem->setData(QString("Listening to all messages"), Qt::DisplayRole);
+        clientItem->child(subscribeItem->row(), order(Column::Data))
+            ->setData(customModeReason, Qt::DisplayRole);
+
+        subscribeItem->removeRows(0, subscribeItem->rowCount());
+        return;
+    }
+
+    clientItem->child(subscribeItem->row(), order(Column::Data))
+        ->setData(QString("Count %1").arg(subs.count()), Qt::DisplayRole);
+
+    QSet<int> subscribedRows;
+    QSet<MessageId> displayedIds;
+    // Find all the rows that don't need modifications
+    for (const auto id : subs) {
+        const auto info = mavlink_get_message_info_by_id(id.value());
+        std::optional<int> messageRow;
+        for (int row = 0; row < subscribeItem->rowCount(); ++row) {
+            const auto item = subscribeItem->child(row, order(Column::Name));
+            if (item->data(Qt::DisplayRole) == QString(info->name)) {
+                messageRow = row;
+            }
+        }
+        if (messageRow) {
+            subscribedRows.insert(*messageRow);
+            displayedIds.insert(id);
+        }
+    }
+    // Handle unsubscribed rows
+    for (int row = 0; row < subscribeItem->rowCount(); ++row) {
+        if (subscribedRows.contains(row))
+            continue;
+
+        const auto updatedItem = subscribeItem->child(row, order(Column::Updated));
+        updatedItem->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
+        const auto dataItem = subscribeItem->child(row, order(Column::Data));
+        if (client->customMode() == ClientNode::CustomMode::SingleMessage)
+            dataItem->setData(customModeReason, Qt::DisplayRole);
+        else
+            dataItem->setData(unsubscribedReason, Qt::DisplayRole);
+
+        for (int column = 0; column < QMetaEnum::fromType<Column>().keyCount(); ++column) {
+            const auto item = subscribeItem->child(row, column);
+            item->setData(stateColor(ClientNode::State::TimedOut), Qt::DecorationRole);
+        }
+    }
+    // Add missing rows
+    for (const auto id : subs) {
+        if (displayedIds.contains(id))
+            continue;
+
+        const auto info = mavlink_get_message_info_by_id(id.value());
+
+        QList<QStandardItem *> created{};
+        const auto nameItem = new QStandardItem(QString(info->name));
+        created.push_back(nameItem);
+        const auto updatedItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
+        updatedItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+        created.push_back(updatedItem);
+        // Frequency not applicable
+        created.push_back(new QStandardItem(""));
+        created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
+
+        const auto dataItem = new QStandardItem(subscribedReason);
+        if (client->customMode() == ClientNode::CustomMode::SingleMessage)
+            dataItem->setData(QString(customModeReason), Qt::DisplayRole);
+        else if (ClientNode::componentSubscriptions.contains(client->component)
+                 && ClientNode::componentSubscriptions[client->component].contains(id))
+            dataItem->setData(QString(componentReason), Qt::DisplayRole);
+        created.push_back(dataItem);
+        Q_ASSERT(created.size() == QMetaEnum::fromType<Column>().keyCount());
+
+        subscribeItem->insertRow(subscribeItem->rowCount(), created);
+    }
+}
+
 QString NetworkDisplay::formatFieldData(QVariant data)
 {
     // the approximate number of significant places is 7.2 for float and 16 for double
@@ -370,9 +487,10 @@ QString NetworkDisplay::formatPascalCase(QString pascal)
 QString NetworkDisplay::formatUpdateTime(qint64 timestamp, UpdateReason reason)
 {
     double seconds = (timestamp - startTimestamp) / 1e6;
-    const auto time = QString("%1:%2")
-        .arg(static_cast<int>(std::floor(seconds / 60.0)), 2, 10, QChar('0'))
-        .arg(QString("%1").arg(std::fmod(seconds, 60.0), 0, 'f', 3).rightJustified(6, '0'));
+    const auto time
+        = QString("%1:%2")
+              .arg(static_cast<int>(std::floor(seconds / 60.0)), 2, 10, QChar('0'))
+              .arg(QString("%1").arg(std::fmod(seconds, 60.0), 0, 'f', 3).rightJustified(6, '0'));
 
     switch (reason) {
     case UpdateReason::Created:

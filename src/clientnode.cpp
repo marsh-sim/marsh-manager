@@ -11,6 +11,7 @@ ClientNode::ClientNode(
     , system{system}
     , component{component}
     , _state{state}
+    , customModeMessage(0)
 {
     firstSysidCompid = state == State::Shadowed;
 
@@ -21,13 +22,28 @@ ClientNode::ClientNode(
     heartbeatTimer->start();
     connect(heartbeatTimer, &QTimer::timeout, this, &ClientNode::heartbeatTimerElapsed);
 
-    autoSubscribe();
+    // Automatically subscribe to all messages based on component type
+    if (componentSubscriptions.contains(component)) {
+        _subscribedMessages.unite(componentSubscriptions[component]);
+    }
 }
 
 void ClientNode::setAppData(ApplicationData *appData)
 {
     this->appData = appData;
 }
+
+QSet<MessageId> ClientNode::subscribedMessages() const
+{
+    if (_customMode == CustomMode::SingleMessage)
+        return {customModeMessage};
+    else if (_customMode == CustomMode::AllMessages)
+        return {};
+    else
+        return _subscribedMessages;
+}
+
+std::optional<MessageId> ClientNode::singleMessage() const {}
 
 void ClientNode::setShadowed(bool shadowed)
 {
@@ -63,11 +79,22 @@ void ClientNode::receiveMessage(Message message)
 
         // Request Manager to only send one specific message, for resource limited nodes.
         // The requested message id should be sent in the lowest three bytes.
-        if (heartbeat.custom_mode & MARSH_MODE_SINGLE_MESSAGE) {
-            singleMessage = MessageId(heartbeat.custom_mode & 0x00FF'FFFF);
+        const auto old_message = customModeMessage;
+        const auto old_mode = _customMode;
+        customModeMessage = MessageId(heartbeat.custom_mode & 0x00FF'FFFF);
+        const quint32 mode_bits = 0x0300'0000;
+        if ((heartbeat.custom_mode & mode_bits) == MARSH_MODE_SINGLE_MESSAGE) {
+            _customMode = CustomMode::SingleMessage;
+        } else if ((heartbeat.custom_mode & mode_bits) == MARSH_MODE_ALL_MESSAGES) {
+            _customMode = CustomMode::AllMessages;
+        } else if ((heartbeat.custom_mode & mode_bits) == 0) {
+            _customMode = CustomMode::None;
         } else {
-            singleMessage = {};
+            qCritical() << "Mutually exclusive bits set in heartbeat.custom_mode received from"
+                        << _connection.toString();
         }
+        if (customModeMessage != old_message || _customMode != old_mode)
+            emit subscribedMessagesChanged(subscribedMessages());
     } else if (message.id() == MessageId(MAVLINK_MSG_ID_COMMAND_INT) || message.id() == MessageId(MAVLINK_MSG_ID_COMMAND_LONG)) {
         handleCommand(message);
     }
@@ -77,10 +104,6 @@ void ClientNode::receiveMessage(Message message)
 
 void ClientNode::sendMessage(Message message)
 {
-    if (singleMessage && message.id() != *singleMessage) {
-        return;
-    }
-
     if (messageLimitIntervals.contains(message.id())) {
         const auto lastTime = sentMessages[message.id()].last.timestamp;
         if (message.timestamp - lastTime < messageLimitIntervals[message.id()]) {
@@ -164,20 +187,24 @@ void ClientNode::handleCommand(Message message)
         if (id_num >= 0 && id_num <= 16777215 && target == 1) {
             // only allow subscribing to valid message id and for the client itself
 
+            qsizetype old_count = _subscribedMessages.count();
             MessageId id{static_cast<uint32_t>(id_num)};
             if (interval == -1) {
-                subscribedMessages.remove(id);
+                _subscribedMessages.remove(id);
                 messageLimitIntervals.remove(id);
                 result = MAV_RESULT_ACCEPTED;
             } else if (interval == 0) {
-                subscribedMessages.insert(id);
+                _subscribedMessages.insert(id);
                 messageLimitIntervals.remove(id);
                 result = MAV_RESULT_ACCEPTED;
             } else if (interval > 0) {
-                subscribedMessages.insert(id);
+                _subscribedMessages.insert(id);
                 messageLimitIntervals.insert(id, interval);
                 result = MAV_RESULT_ACCEPTED;
             }
+
+            if (_subscribedMessages.count() != old_count)
+                emit subscribedMessagesChanged(subscribedMessages());
 
             { // debug print
                 const auto info = mavlink_get_message_info_by_id(id_num);
@@ -220,33 +247,39 @@ void ClientNode::heartbeatTimerElapsed()
     }
 }
 
-void ClientNode::autoSubscribe()
-{
-    switch (component.value()) {
-    case MARSH_COMP_ID_FLIGHT_MODEL:
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL);
-        break;
-    case MARSH_COMP_ID_INSTRUMENTS:
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_MANUAL_SETPOINT);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_ATTITUDE);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_HIGHRES_IMU);
-        break;
-    case MARSH_COMP_ID_VISUALISATION:
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_ATTITUDE);
-        break;
-    case MARSH_COMP_ID_MOTION_PLATFORM:
-    case MARSH_COMP_ID_GSEAT:
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_SIM_STATE);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_HIGHRES_IMU);
-        subscribedMessages << MessageId(MAVLINK_MSG_ID_MOTION_CUE_EXTRA);
-        break;
-    }
-}
+const QMap<ComponentId, QSet<MessageId>> ClientNode::componentSubscriptions{
+    {ComponentId(MARSH_COMP_ID_FLIGHT_MODEL),
+     {
+         MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL),
+     }},
+    {ComponentId(MARSH_COMP_ID_INSTRUMENTS),
+     {
+         MessageId{MAVLINK_MSG_ID_MANUAL_CONTROL},
+         MessageId(MAVLINK_MSG_ID_MANUAL_SETPOINT),
+         MessageId(MAVLINK_MSG_ID_SIM_STATE),
+         MessageId(MAVLINK_MSG_ID_ATTITUDE),
+         MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED),
+         MessageId(MAVLINK_MSG_ID_HIGHRES_IMU),
+     }},
+    {ComponentId(MARSH_COMP_ID_VISUALISATION),
+     {
+         MessageId(MAVLINK_MSG_ID_SIM_STATE),
+         MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED),
+         MessageId(MAVLINK_MSG_ID_ATTITUDE),
+     }},
+    {ComponentId(MARSH_COMP_ID_MOTION_PLATFORM),
+     {
+         MessageId(MAVLINK_MSG_ID_SIM_STATE),
+         MessageId(MAVLINK_MSG_ID_HIGHRES_IMU),
+         MessageId(MAVLINK_MSG_ID_MOTION_CUE_EXTRA),
+     }},
+    {ComponentId(MARSH_COMP_ID_GSEAT),
+     {
+         MessageId(MAVLINK_MSG_ID_SIM_STATE),
+         MessageId(MAVLINK_MSG_ID_HIGHRES_IMU),
+         MessageId(MAVLINK_MSG_ID_MOTION_CUE_EXTRA),
+     }},
+};
 
 QString ClientNode::Connection::toString()
 {
