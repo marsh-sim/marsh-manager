@@ -73,7 +73,6 @@ public:
     /// Messages that this client is interested in receiving
     QSet<MessageId> subscribedMessages() const;
     CustomMode customMode() const { return _customMode; }
-    std::optional<MessageId> singleMessage() const;
 
     void setShadowed(bool shadowed);
 

@@ -43,8 +43,6 @@ QSet<MessageId> ClientNode::subscribedMessages() const
         return _subscribedMessages;
 }
 
-std::optional<MessageId> ClientNode::singleMessage() const {}
-
 void ClientNode::setShadowed(bool shadowed)
 {
     if (shadowed != firstSysidCompid) {
