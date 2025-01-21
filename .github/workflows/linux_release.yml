@@ -12,7 +12,9 @@ defaults:
 env:
   SOURCE_DIR: ${{ github.workspace }}
   ARTIFACT: marsh-mgr.AppImage
-  QT_VERSION: 6.8
+  # Specifying full version number as workaround for the Install Qt Action issue, see:
+  # https://github.com/jurplel/install-qt-action/issues/269#issuecomment-2537572881
+  QT_VERSION: 6.8.1
 
 jobs:
   build:
