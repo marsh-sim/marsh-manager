@@ -18,6 +18,7 @@ public:
         Updated,
         Frequency,
         Data,
+        Plotting,
     };
     Q_ENUM(Column)
 
@@ -72,6 +73,7 @@ private:
 
     enum CustomRoles : int {
         EditableRole = Qt::UserRole,
+        PlottingRole,
     };
 
     void handleClientMessage(ClientNode *const client, Message message, Direction direction);
