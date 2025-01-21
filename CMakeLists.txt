@@ -9,16 +9,16 @@ execute_process(
 
 project(
   marsh-manager
-  VERSION 0.1.0.${GIT_COMMIT_COUNT}
+  VERSION 0.2.0.${GIT_COMMIT_COUNT}
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17) # minimum required by Qt6
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick Network QuickControls2 Gui
-                                         Widgets)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Quick Network QuickControls2 Gui
+                                         Widgets Graphs)
 
-qt_standard_project_setup(REQUIRES 6.5)
+qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(appmarsh-manager src/main.cpp)
 set_target_properties(appmarsh-manager PROPERTIES OUTPUT_NAME marsh-mgr)
@@ -164,7 +164,8 @@ target_link_libraries(
   PRIVATE Qt6::Network
   PRIVATE Qt6::QuickControls2
   PRIVATE Qt6::Gui
-  PRIVATE Qt6::Widgets)
+  PRIVATE Qt6::Widgets
+  PRIVATE Qt6::Graphs)
 
 include(GNUInstallDirs)
 install(
