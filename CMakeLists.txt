@@ -70,7 +70,9 @@ qt_add_qml_module(
   src/frequencyestimator.cpp
   SOURCES
   src/networkdisplayproxy.h
-  src/networkdisplayproxy.cpp)
+  src/networkdisplayproxy.cpp
+  QML_FILES
+  src/ToolsMenu.qml)
 
 qt_add_resources(appmarsh-manager "app_text" PREFIX "/" FILES LICENSE.txt)
 
