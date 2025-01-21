@@ -49,7 +49,7 @@ Item {
             id: chooser
             role: "editable"
             DelegateChoice {
-                roleValue: "true"
+                roleValue: "number"
                 TreeViewDelegate {
                     contentItem: Button {
                         contentItem: Text {
@@ -60,6 +60,21 @@ Item {
                         }
                         onClicked: treeView.model.itemClicked(treeView.index(
                                                                   row, column))
+                    }
+                }
+            }
+
+            DelegateChoice {
+                roleValue: "checkbox"
+                TreeViewDelegate {
+                    contentItem: CheckBox {
+                        checked: model.plotting
+                        nextCheckState: function () {
+                            treeView.model.itemClicked(treeView.index(row,
+                                                                      column))
+                            console.log(model.plotting)
+                            return model.plotting ? Qt.Checked : Qt.Unchecked
+                        }
                     }
                 }
             }

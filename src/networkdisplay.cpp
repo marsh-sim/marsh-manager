@@ -16,6 +16,7 @@ NetworkDisplay::NetworkDisplay(QObject *parent)
     auto roleNames = _model->roleNames();
     roleNames[Qt::TextAlignmentRole] = "textAlign";
     roleNames[EditableRole] = "editable";
+    roleNames[PlottingRole] = "plotting";
     _model->setItemRoleNames(roleNames);
 
     auto metaEnum = QMetaEnum::fromType<Column>();
@@ -50,8 +51,11 @@ void NetworkDisplay::addClient(ClientNode *const client)
         QString("System %1 %2").arg(client->system.toString(), name(client->component)));
     dataItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
+    auto plotItem = new QStandardItem("0 values");
+    plotItem->setData(0, PlottingRole);
+
     clientItems[client] = clientItem;
-    root->appendRow({clientItem, updateItem, frequencyItem, dataItem});
+    root->appendRow({clientItem, updateItem, frequencyItem, dataItem, plotItem});
 
     auto stateItem = new QStandardItem(name(ClientRow::State));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
@@ -60,7 +64,8 @@ void NetworkDisplay::addClient(ClientNode *const client)
     frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem(name(client->state()));
     dataItem->setData(stateColor(client->state()), Qt::DecorationRole);
-    clientItem->appendRow({stateItem, updateItem, frequencyItem, dataItem});
+    plotItem = new QStandardItem("");
+    clientItem->appendRow({stateItem, updateItem, frequencyItem, dataItem, plotItem});
 
     auto receivedItem = new QStandardItem(name(ClientRow::ReceivedMessages));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
@@ -68,7 +73,9 @@ void NetworkDisplay::addClient(ClientNode *const client)
     frequencyItem = new QStandardItem("");
     frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem("");
-    clientItem->appendRow({receivedItem, updateItem, frequencyItem, dataItem});
+    plotItem = new QStandardItem("0 values");
+    plotItem->setData(0, PlottingRole);
+    clientItem->appendRow({receivedItem, updateItem, frequencyItem, dataItem, plotItem});
 
     auto sentItem = new QStandardItem(name(ClientRow::SentMessages));
     updateItem = new QStandardItem(formatUpdateTime(Message::currentTime()));
@@ -76,7 +83,9 @@ void NetworkDisplay::addClient(ClientNode *const client)
     frequencyItem = new QStandardItem("");
     frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem("");
-    clientItem->appendRow({sentItem, updateItem, frequencyItem, dataItem});
+    plotItem = new QStandardItem("0 values");
+    plotItem->setData(0, PlottingRole);
+    clientItem->appendRow({sentItem, updateItem, frequencyItem, dataItem, plotItem});
 
     auto paramItem = new QStandardItem(QString("No parameters"));
     paramItem->setData(stateColor(ClientNode::State::TimedOut), Qt::DecorationRole);
@@ -85,7 +94,9 @@ void NetworkDisplay::addClient(ClientNode *const client)
     frequencyItem = new QStandardItem("");
     frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem("");
-    clientItem->appendRow({paramItem, updateItem, frequencyItem, dataItem});
+    plotItem = new QStandardItem("0 values");
+    plotItem->setData(0, PlottingRole);
+    clientItem->appendRow({paramItem, updateItem, frequencyItem, dataItem, plotItem});
 
     auto subscribeItem = new QStandardItem(name(ClientRow::SubscribedMessages));
     updateItem = new QStandardItem("");
@@ -93,7 +104,9 @@ void NetworkDisplay::addClient(ClientNode *const client)
     frequencyItem = new QStandardItem("");
     frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
     dataItem = new QStandardItem("");
-    clientItem->appendRow({subscribeItem, updateItem, frequencyItem, dataItem});
+    plotItem = new QStandardItem("");
+    plotItem->setData(0, PlottingRole);
+    clientItem->appendRow({subscribeItem, updateItem, frequencyItem, dataItem, plotItem});
     updateSubscribed(client);
 
     // clang-format off
@@ -140,6 +153,26 @@ void NetworkDisplay::itemClicked(const QModelIndex &index)
                                                       {static_cast<float>(newValue)},
                                                       client->component,
                                                       client->system);
+        }
+    } else if (index.data(EditableRole) == QString("checkbox")
+               && index.column() == order(Column::Plotting)) {
+        // handle plotting checkbox
+        auto checkboxItem = _model->itemFromIndex(index);
+        const bool plotting = !checkboxItem->data(PlottingRole).toBool();
+        checkboxItem->setData(plotting, PlottingRole);
+
+        auto parent = index.parent();
+        while (parent.isValid()) {
+            auto parentPlotting = _model->itemFromIndex(
+                parent.siblingAtColumn(order(Column::Plotting)));
+            const auto plottingCount = parentPlotting->data(PlottingRole).toInt()
+                                       + (plotting ? 1 : -1);
+            parentPlotting->setData(plottingCount, PlottingRole);
+            parentPlotting->setData(QString("%1 value%2")
+                                        .arg(plottingCount)
+                                        .arg(plottingCount == 1 ? "" : "s"),
+                                    Qt::DisplayRole);
+            parent = parent.parent();
         }
     }
 
@@ -258,11 +291,13 @@ void NetworkDisplay::handleClientMessage(ClientNode *const client,
         created.push_back(new QStandardItem(""));
         created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
         created.push_back(new QStandardItem(QString("id: ") + message.id().toString()));
+        created.push_back(new QStandardItem("0 values"));
+        created.last()->setData(0, PlottingRole);
         Q_ASSERT(created.size() == QMetaEnum::fromType<Column>().keyCount());
 
         // show the message source for sent messages
         if (direction == Direction::Sent) {
-            auto dataItem = created.last();
+            auto dataItem = created.at(order(Column::Data));
             dataItem->setData(dataItem->data(Qt::DisplayRole).toString()
                                   + QString(", from system %1 %2")
                                         .arg(message.senderSystem().toString(),
@@ -303,6 +338,9 @@ void NetworkDisplay::handleClientMessage(ClientNode *const client,
             created.push_back(new QStandardItem(""));
             created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
             created.push_back(new QStandardItem(mavlinkData(field, message).toString()));
+            created.push_back(new QStandardItem(""));
+            created.last()->setData(false, PlottingRole);
+            created.last()->setData("checkbox", EditableRole);
             Q_ASSERT(created.size() == QMetaEnum::fromType<Column>().keyCount());
 
             messageItem->appendRow(created);
@@ -355,6 +393,9 @@ void NetworkDisplay::handleParamValue(ClientNode *const client, Message message)
         created.push_back(new QStandardItem(""));
         created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
         created.push_back(new QStandardItem(""));
+        created.push_back(new QStandardItem(""));
+        created.last()->setData("checkbox", EditableRole);
+        created.last()->setData(false, PlottingRole);
         Q_ASSERT(created.size() == QMetaEnum::fromType<Column>().keyCount());
 
         paramsItem->insertRow(paramsItem->rowCount(), created);
@@ -369,7 +410,7 @@ void NetworkDisplay::handleParamValue(ClientNode *const client, Message message)
     // FIXME: Store the initial QVariant instead of QString, format floating point numbers in QML delegate
     dataItem->setData(formatFieldData(paramData(param_value.param_value, param_value.param_type)),
                       Qt::DisplayRole);
-    dataItem->setData(true, EditableRole);
+    dataItem->setData("number", EditableRole);
 }
 
 void NetworkDisplay::updateSubscribed(ClientNode *const client)
