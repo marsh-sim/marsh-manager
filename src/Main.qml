@@ -10,6 +10,7 @@ ApplicationWindow {
     title: "MARSH Manager v" + Qt.application.version
 
     menuBar: MenuBar {
+        ToolsMenu {}
         HelpMenu {}
     }
 
