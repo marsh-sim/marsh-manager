@@ -402,7 +402,7 @@ void NetworkDisplay::handleParamValue(ClientNode *const client, Message message)
     }
 
     paramsItem->child(param_value.param_index, order(Column::Name))
-        ->setData(QString(param_value.param_id), Qt::DisplayRole);
+        ->setData(paramName(param_value.param_id), Qt::DisplayRole);
     paramsItem->child(param_value.param_index, order(Column::Updated))
         ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
 
@@ -666,4 +666,13 @@ QVariant NetworkDisplay::paramData(const float param_value, const uint8_t param_
     default:
         return {};
     }
+}
+
+QString NetworkDisplay::paramName(const char param_id[16])
+{
+    // Ensure null termination
+    char nameBuffer[17];
+    std::memcpy(nameBuffer, param_id, 16);
+    nameBuffer[16] = '\0';
+    return QString(nameBuffer);
 }

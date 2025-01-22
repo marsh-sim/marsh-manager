@@ -50,6 +50,9 @@ public:
     Q_PROPERTY(QStandardItemModel *model READ model CONSTANT)
 
     Q_INVOKABLE QString formatUpdateTime(qint64 timestamp, UpdateReason reason=UpdateReason::None);
+    static QVariant paramData(const float param_value, const uint8_t param_type);
+    static QString paramName(const char param_id[16]);
+    static QVariant mavlinkData(const mavlink_field_info_t &field, const Message &message);
 
     QStandardItemModel *model() const { return _model; }
 
@@ -90,8 +93,6 @@ private:
     QString name(ComponentId component);
 
     QVariant stateColor(ClientNode::State state);
-    QVariant mavlinkData(const mavlink_field_info_t &field, const Message &message);
-    QVariant paramData(const float param_value, const uint8_t param_type);
 
     ApplicationData *appData;
     QStandardItemModel *_model;

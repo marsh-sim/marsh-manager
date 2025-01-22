@@ -72,7 +72,10 @@ qt_add_qml_module(
   src/networkdisplayproxy.h
   src/networkdisplayproxy.cpp
   QML_FILES
-  src/ToolsMenu.qml)
+  src/ToolsMenu.qml
+  SOURCES
+  src/plotbackend.h
+  src/plotbackend.cpp)
 
 qt_add_resources(appmarsh-manager "app_text" PREFIX "/" FILES LICENSE.txt)
 
