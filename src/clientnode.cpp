@@ -227,13 +227,17 @@ void ClientNode::handleCommand(Message message)
     mavlink_command_ack_t ack;
     ack.command = command;
     ack.result = result;
+    ack.progress = 0;
+    ack.result_param2 = 0;
+    ack.target_system = message.senderSystem().value();
+    ack.target_component = message.senderComponent().value();
 
     Message reply{Message::currentTime(), {}};
-    mavlink_msg_command_ack_encode_chan(system.value(),
-                                      component.value(),
-                                      MAVLINK_COMM_0,
-                                      &reply.m,
-                                      &ack);
+    mavlink_msg_command_ack_encode_chan(appData->localSystemId(),
+                                        appData->localComponentId(),
+                                        MAVLINK_COMM_0,
+                                        &reply.m,
+                                        &ack);
     sendMessage(reply);
 }
 
