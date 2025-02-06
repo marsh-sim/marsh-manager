@@ -491,6 +491,7 @@ void NetworkDisplay::updateSubscribed(ClientNode *const client)
         created.push_back(updatedItem);
         // Frequency not applicable
         created.push_back(new QStandardItem(""));
+        created.push_back(new QStandardItem(""));
         created.last()->setData(Qt::AlignRight, Qt::TextAlignmentRole);
 
         const auto dataItem = new QStandardItem(subscribedReason);
