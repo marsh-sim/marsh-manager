@@ -267,6 +267,8 @@ const QMap<ComponentId, QSet<MessageId>> ClientNode::componentSubscriptions{
      }},
     {ComponentId(MARSH_COMP_ID_MOTION_PLATFORM),
      {
+         MessageId(MAVLINK_MSG_ID_COMMAND_LONG),
+         MessageId(MAVLINK_MSG_ID_COMMAND_INT),
          MessageId(MAVLINK_MSG_ID_SIM_STATE),
          MessageId(MAVLINK_MSG_ID_HIGHRES_IMU),
          MessageId(MAVLINK_MSG_ID_MOTION_CUE_EXTRA),
