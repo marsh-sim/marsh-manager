@@ -12,6 +12,16 @@ int64_t Message::currentTime()
     return *startTimestamp + runningTimer->nsecsElapsed() / 1000;
 }
 
+int32_t Message::timeBootMs()
+{
+    if (!Message::startTimestamp || !Message::runningTimer) {
+        startTimestamp = QDateTime::currentMSecsSinceEpoch() * 1000;
+        runningTimer = QElapsedTimer{};
+        runningTimer->start();
+    }
+    return runningTimer->elapsed();
+}
+
 std::optional<int64_t> Message::startTimestamp{};
 std::optional<QElapsedTimer> Message::runningTimer{};
 

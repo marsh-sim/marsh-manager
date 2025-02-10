@@ -51,6 +51,8 @@ public:
     QString buildGitHash() const { return QString(kGitHash); }
     QString licenseText();
 
+    Message componentInformationBasic() const;
+
 signals:
 
 private:
