@@ -6,7 +6,13 @@ For documentation, see [MARSH Documentation - MARSH Manager](https://marsh-sim.g
 
 ## Installation
 
-The project requires Qt 6.5, and is built with CMake.
+The project requires Qt 6.8, and is built with CMake.
+
+If you get the XKB missing error, this can be resolved with the following on Ubuntu:
+
+```bash
+sudo apt install libxkbcommon-dev
+```
 
 To build, open the CMakeLists.txt file as a project in Qt Creator and click "Build" (a hammer icon) in the bottom left part of the window.
 
