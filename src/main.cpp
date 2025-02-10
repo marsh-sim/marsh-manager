@@ -4,6 +4,7 @@
 #include "appearanceutils.h"
 #include "applicationdata.h"
 #include "git_version.h"
+#include "message.h"
 
 int main(int argc, char *argv[])
 {
@@ -30,6 +31,9 @@ int main(int argc, char *argv[])
         Qt::QueuedConnection);
     engine.rootContext()->setContextProperty("appData", &appData);
     engine.loadFromModule("marsh-manager", "Main");
+
+    // Start the message timer
+    Message::timeBootMs();
 
     return app.exec();
 }

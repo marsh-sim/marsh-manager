@@ -83,6 +83,8 @@ struct Message
 
     /// Global timer for timestamps in microseconds since epoch
     static int64_t currentTime();
+    /// Global timer for milliseconds since start for many MAVLink messages containing time_boot_ms
+    static int32_t timeBootMs();
 
 private:
     /// Singleton offset since epoch

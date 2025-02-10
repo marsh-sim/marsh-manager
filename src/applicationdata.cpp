@@ -44,3 +44,27 @@ QString ApplicationData::licenseText()
 
     return file.readAll();
 }
+
+Message ApplicationData::componentInformationBasic() const
+{
+    mavlink_component_information_basic_t info;
+    info.time_boot_ms = Message::timeBootMs();
+    info.capabilities = MAV_PROTOCOL_CAPABILITY_COMMAND_INT | MAV_PROTOCOL_CAPABILITY_MAVLINK2;
+    info.time_manufacture_s = kGitEpoch;
+    std::memset(info.vendor_name, 0, sizeof(info.vendor_name));
+    std::memset(info.model_name, 0, sizeof(info.model_name));
+    std::memset(info.software_version, 0, sizeof(info.software_version));
+    std::strncpy(info.software_version,
+                 QCoreApplication::applicationVersion().toUtf8(),
+                 sizeof(info.software_version));
+    std::memset(info.hardware_version, 0, sizeof(info.hardware_version));
+    std::memset(info.serial_number, 0, sizeof(info.serial_number));
+
+    Message message{Message::currentTime(), {}};
+    mavlink_msg_component_information_basic_encode_chan(localSystemId(),
+                                                        localComponentId(),
+                                                        MAVLINK_COMM_0,
+                                                        &message.m,
+                                                        &info);
+    return message;
+}

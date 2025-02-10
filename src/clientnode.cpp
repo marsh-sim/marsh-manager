@@ -222,6 +222,33 @@ void ClientNode::handleCommand(Message message)
                 }
             }
         }
+    } else if (command == MAV_CMD_REQUEST_MESSAGE) {
+        result = MAV_RESULT_DENIED; // assume parameters not accepted
+        qint32 id_num = qRound(param1);
+        int target = qRound(param7);
+        if (id_num >= 0 && id_num <= 16777215 && target == 1) {
+            // only allow requesting valid message id and for the client itself
+
+            if (id_num == MAVLINK_MSG_ID_COMPONENT_INFORMATION_BASIC) {
+                result = MAV_RESULT_ACCEPTED;
+                sendMessage(appData->componentInformationBasic());
+            }
+
+            { // debug print
+                const auto info = mavlink_get_message_info_by_id(id_num);
+                const auto compName = appData->dialect()->componentName(component);
+                if (info && compName) {
+                    auto deb = qDebug().noquote()
+                               << "Client in System" << system.toString() << *compName;
+                    if (result != MAV_RESULT_ACCEPTED) {
+                        deb << "requested unsupported message";
+                    } else {
+                        deb << "requested a message";
+                    }
+                    deb << info->name;
+                }
+            }
+        }
     }
 
     mavlink_command_ack_t ack;
