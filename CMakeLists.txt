@@ -1,15 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-# get number of commits in current branch
-execute_process(
-  COMMAND git rev-list HEAD --first-parent --count
-  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-  OUTPUT_VARIABLE GIT_COMMIT_COUNT
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
 project(
   marsh-manager
-  VERSION 0.2.0.${GIT_COMMIT_COUNT}
+  VERSION 0.2.0
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17) # minimum required by Qt6
@@ -23,6 +16,13 @@ qt_standard_project_setup(REQUIRES 6.8)
 qt_add_executable(appmarsh-manager src/main.cpp)
 set_target_properties(appmarsh-manager PROPERTIES OUTPUT_NAME marsh-mgr)
 
+# Get last commit hash without the need to reconfigure By Jonathan Hamberg,
+# under MIT License. see:
+# https://jonathanhamberg.com/post/cmake-embedding-git-hash/
+# https://gitlab.com/jhamberg/cmake-examples
+include(cmake/CheckGit.cmake)
+checkgitsetup()
+
 qt_add_qml_module(
   appmarsh-manager
   URI
@@ -31,49 +31,34 @@ qt_add_qml_module(
   1.0
   QML_FILES
   src/Main.qml
+  src/HelpMenu.qml
+  src/NetworkView.qml
+  src/ToolsMenu.qml
   SOURCES
   src/router.h
   src/router.cpp
-  SOURCES
   src/applicationdata.h
   src/applicationdata.cpp
-  SOURCES
   src/clientnode.h
   src/clientnode.cpp
-  SOURCES
   src/message.h
   src/message.cpp
-  QML_FILES
-  src/HelpMenu.qml
-  SOURCES
   src/networkdisplay.h
   src/networkdisplay.cpp
-  QML_FILES
-  src/NetworkView.qml
-  SOURCES
   src/logger.h
   src/logger.cpp
-  SOURCES
   src/appearanceutils.h
   src/appearanceutils.cpp
-  SOURCES
   src/heartbeatservice.h
   src/heartbeatservice.cpp
-  SOURCES
   src/dialectinfo.h
   src/dialectinfo.cpp
-  SOURCES
   src/parameterservice.h
   src/parameterservice.cpp
-  SOURCES
   src/frequencyestimator.h
   src/frequencyestimator.cpp
-  SOURCES
   src/networkdisplayproxy.h
   src/networkdisplayproxy.cpp
-  QML_FILES
-  src/ToolsMenu.qml
-  SOURCES
   src/plotbackend.h
   src/plotbackend.cpp)
 
@@ -138,13 +123,6 @@ endif()
 
 target_include_directories(appmarsh-manager PRIVATE include)
 
-# get the latest abbreviated commit hash
-execute_process(
-  COMMAND git log -1 --format=%h
-  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-  OUTPUT_VARIABLE GIT_HASH
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
 # change list separator from semicolon to comma, to put in compile definitions
 string(REPLACE ";" "," MESSAGE_DEFINITION_FILES_COMMA
                "${MESSAGE_DEFINITION_FILES}")
@@ -155,11 +133,9 @@ target_compile_definitions(
     MAVLINK_USE_MESSAGE_INFO=1
     # prevent MSVC from redefining same constants that Qt provides
     _MATH_DEFINES_DEFINED=1
-    APP_GIT_COMMIT_COUNT="${GIT_COMMIT_COUNT}"
-    APP_GIT_HASH="${GIT_HASH}"
     APP_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
     # add git commit number to Debug build version
-    APP_VERSION="${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}$<$<CONFIG:Debug>:+${PROJECT_VERSION_TWEAK}>"
+    APP_VERSION="${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}"
     # suppress the "QML debugging is enabled..." warning
     QT_QML_DEBUG_NO_WARNING=1
     MESSAGE_DEFINITION_FILES="${MESSAGE_DEFINITION_FILES_COMMA}")
@@ -174,7 +150,8 @@ target_link_libraries(
   PRIVATE Qt6::QuickControls2
   PRIVATE Qt6::Gui
   PRIVATE Qt6::Widgets
-  PRIVATE Qt6::Graphs)
+  PRIVATE Qt6::Graphs
+  PRIVATE git_version)
 
 include(GNUInstallDirs)
 install(

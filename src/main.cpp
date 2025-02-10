@@ -3,11 +3,12 @@
 #include <QQmlContext>
 #include "appearanceutils.h"
 #include "applicationdata.h"
+#include "git_version.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    app.setApplicationVersion(APP_VERSION);
+    app.setApplicationVersion(QString("%1+%2.%3").arg(APP_VERSION).arg(kGitCount).arg(kGitHash));
 
     QCommandLineParser parser;
     parser.addVersionOption();

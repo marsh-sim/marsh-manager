@@ -27,11 +27,11 @@ trap cleanup EXIT
 REPO_ROOT=$(readlink -f $(dirname $(dirname $0)))
 OLD_CWD=$(readlink -f .)
 
-# Setup Qt6 paths; requires Qt6_DIR variable, e.g. Qt6_DIR=/home/marek/Qt/6.5.3/gcc_64/
-# works with default installation of 6.5.3
+# Setup Qt6 paths; requires Qt6_DIR variable, e.g. Qt6_DIR=/home/marek/Qt/6.8.2/gcc_64/
+# works with default installation of 6.8.2
 if [ -z "$Qt6_DIR" ]; then
-    if [ -d "$HOME/Qt/6.5.3/gcc_64" ]; then
-        Qt6_DIR="$HOME/Qt/6.5.3/gcc_64/"
+    if [ -d "$HOME/Qt/6.8.2/gcc_64" ]; then
+        Qt6_DIR="$HOME/Qt/6.8.2/gcc_64/"
     else
         echo "Set the Qt6_DIR variable to the desired Qt installation"
         exit 1

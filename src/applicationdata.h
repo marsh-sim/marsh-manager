@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include "dialectinfo.h"
+#include "git_version.h"
 #include "heartbeatservice.h"
 #include "logger.h"
 #include "networkdisplay.h"
@@ -28,6 +29,7 @@ public:
     Q_PROPERTY(quint8 localSystemId READ localSystemId CONSTANT)
     Q_PROPERTY(quint8 localComponentId READ localComponentId CONSTANT)
 
+    Q_PROPERTY(QString version READ version CONSTANT)
     Q_PROPERTY(QString buildType READ buildType CONSTANT)
     Q_PROPERTY(QString buildGitCommitCount READ buildGitCommitCount CONSTANT)
     Q_PROPERTY(QString buildGitHash READ buildGitHash CONSTANT)
@@ -43,9 +45,10 @@ public:
     quint8 localSystemId() const;
     quint8 localComponentId() const;
 
+    QString version() const { return APP_VERSION; }
     QString buildType() const { return APP_BUILD_TYPE; }
-    QString buildGitCommitCount() const { return APP_GIT_COMMIT_COUNT; }
-    QString buildGitHash() const { return APP_GIT_HASH; }
+    QString buildGitCommitCount() const { return QString::number(kGitCount); }
+    QString buildGitHash() const { return QString(kGitHash); }
     QString licenseText();
 
 signals:
