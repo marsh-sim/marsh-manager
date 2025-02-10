@@ -1,0 +1,4 @@
+#include "git_version.h"
+const char *kGitHash = "@GIT_HASH@";
+const unsigned int kGitCount = @GIT_COUNT@;
+const unsigned int kGitEpoch = @GIT_EPOCH@;

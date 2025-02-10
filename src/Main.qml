@@ -7,7 +7,8 @@ ApplicationWindow {
     width: 800
     height: 600
     visible: true
-    title: "MARSH Manager v" + Qt.application.version
+    title: "MARSH Manager v" + appData.version
+           + (appData.buildType === "Release" ? "" : (" (" + appData.buildType + ")"))
 
     menuBar: MenuBar {
         ToolsMenu {}

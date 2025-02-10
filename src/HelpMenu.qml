@@ -43,7 +43,7 @@ Menu {
     MessageDialog {
         id: appInfo
         buttons: MessageDialog.Ok
-        text: `MARSH Manager\nVersion ${Qt.application.version}\nBuild type ${appData.buildType}\nGit commit no. ${appData.buildGitCommitCount} ref ${appData.buildGitHash}\n\nCopyright © 2024 Marek S. Łukasiewicz`
+        text: `MARSH Manager\nVersion ${appData.version}\nGit commit no. ${appData.buildGitCommitCount} ref ${appData.buildGitHash}\nBuild type ${appData.buildType}\n\nCopyright © 2024 Marek S. Łukasiewicz`
         informativeText: qsTr("
 Developed at Department of Aerospace Science and Technology (DAER) of Politecnico di Milano
 
