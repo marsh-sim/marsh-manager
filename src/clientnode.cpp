@@ -10,6 +10,7 @@ ClientNode::ClientNode(
     , _connection{connection}
     , system{system}
     , component{component}
+    , type{MAV_TYPE_GENERIC}
     , _state{state}
     , customModeMessage(0)
 {
@@ -21,11 +22,6 @@ ClientNode::ClientNode(
     heartbeatTimer->setInterval(5000);
     heartbeatTimer->start();
     connect(heartbeatTimer, &QTimer::timeout, this, &ClientNode::heartbeatTimerElapsed);
-
-    // Automatically subscribe to all messages based on component type
-    if (componentSubscriptions.contains(component)) {
-        _subscribedMessages.unite(componentSubscriptions[component]);
-    }
 }
 
 void ClientNode::setAppData(ApplicationData *appData)
@@ -69,6 +65,14 @@ void ClientNode::receiveMessage(Message message)
         mavlink_msg_heartbeat_decode(&message.m, &heartbeat);
 
         heartbeatTimer->start();
+
+        if (type != ComponentType(heartbeat.type)) {
+            type = ComponentType(heartbeat.type);
+            // Automatically subscribe to all messages based on component type
+            if (componentSubscriptions.contains(type)) {
+                _subscribedMessages.unite(componentSubscriptions[type]);
+            }
+        }
 
         if (_state == State::Unregistered || _state == State::TimedOut) {
             _state = firstSysidCompid ? State::Shadowed : State::Connected;
@@ -172,7 +176,7 @@ void ClientNode::handleCommand(Message message)
         return;
     }
 
-    if (targetSystem != system || (targetComponent != component && targetComponent != ComponentId(MARSH_COMP_ID_MANAGER))) {
+    if (targetSystem != system || (targetComponent != component && targetComponent != ComponentId(appData->localComponentId()))) {
         return;
     }
 
@@ -276,12 +280,12 @@ void ClientNode::heartbeatTimerElapsed()
     }
 }
 
-const QMap<ComponentId, QSet<MessageId>> ClientNode::componentSubscriptions{
-    {ComponentId(MARSH_COMP_ID_FLIGHT_MODEL),
+const QMap<ComponentType, QSet<MessageId>> ClientNode::componentSubscriptions{
+    {ComponentType(MARSH_TYPE_FLIGHT_MODEL),
      {
          MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL),
      }},
-    {ComponentId(MARSH_COMP_ID_INSTRUMENTS),
+    {ComponentType(MARSH_TYPE_INSTRUMENTS),
      {
          MessageId{MAVLINK_MSG_ID_MANUAL_CONTROL},
          MessageId(MAVLINK_MSG_ID_MANUAL_SETPOINT),
@@ -290,13 +294,13 @@ const QMap<ComponentId, QSet<MessageId>> ClientNode::componentSubscriptions{
          MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED),
          MessageId(MAVLINK_MSG_ID_HIGHRES_IMU),
      }},
-    {ComponentId(MARSH_COMP_ID_VISUALISATION),
+    {ComponentType(MARSH_TYPE_VISUALISATION),
      {
          MessageId(MAVLINK_MSG_ID_SIM_STATE),
          MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED),
          MessageId(MAVLINK_MSG_ID_ATTITUDE),
      }},
-    {ComponentId(MARSH_COMP_ID_MOTION_PLATFORM),
+    {ComponentType(MARSH_TYPE_MOTION_PLATFORM),
      {
          MessageId(MAVLINK_MSG_ID_COMMAND_LONG),
          MessageId(MAVLINK_MSG_ID_COMMAND_INT),
@@ -304,7 +308,7 @@ const QMap<ComponentId, QSet<MessageId>> ClientNode::componentSubscriptions{
          MessageId(MAVLINK_MSG_ID_HIGHRES_IMU),
          MessageId(MAVLINK_MSG_ID_MOTION_CUE_EXTRA),
      }},
-    {ComponentId(MARSH_COMP_ID_GSEAT),
+    {ComponentType(MARSH_TYPE_GSEAT),
      {
          MessageId(MAVLINK_MSG_ID_SIM_STATE),
          MessageId(MAVLINK_MSG_ID_HIGHRES_IMU),
