@@ -424,7 +424,7 @@ void NetworkDisplay::updateSubscribed(ClientNode *const client)
         ->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
 
     const auto customModeReason = QString("Due to custom_mode");
-    const auto componentReason = QString("Due to component id");
+    const auto componentReason = QString("Due to component type");
     const auto subscribedReason = QString("Subscribed with command");
     const auto unsubscribedReason = QString("Unsubscribed with command");
 
@@ -497,8 +497,8 @@ void NetworkDisplay::updateSubscribed(ClientNode *const client)
         const auto dataItem = new QStandardItem(subscribedReason);
         if (client->customMode() == ClientNode::CustomMode::SingleMessage)
             dataItem->setData(QString(customModeReason), Qt::DisplayRole);
-        else if (ClientNode::componentSubscriptions.contains(client->component)
-                 && ClientNode::componentSubscriptions[client->component].contains(id))
+        else if (ClientNode::componentSubscriptions.contains(client->type)
+                 && ClientNode::componentSubscriptions[client->type].contains(id))
             dataItem->setData(QString(componentReason), Qt::DisplayRole);
         created.push_back(dataItem);
         Q_ASSERT(created.size() == QMetaEnum::fromType<Column>().keyCount());

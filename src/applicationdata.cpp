@@ -29,7 +29,7 @@ quint8 ApplicationData::localSystemId() const
 }
 quint8 ApplicationData::localComponentId() const
 {
-    return MARSH_COMP_ID_MANAGER;
+    return MAV_COMP_ID_USER1; // For backward compatibility
 }
 
 QString ApplicationData::licenseText()

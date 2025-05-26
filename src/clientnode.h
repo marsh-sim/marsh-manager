@@ -52,6 +52,7 @@ public:
     };
     SystemId system;
     ComponentId component;
+    ComponentType type;
 
     explicit ClientNode(QObject *parent,
                         Connection connection,
@@ -90,8 +91,8 @@ public:
     QMap<MessageId, qint64> messageLimitIntervals;
     quint8 sendingSequenceNumber = 0;
 
-    /// Messages always subscribed to based on component id
-    static const QMap<ComponentId, QSet<MessageId>> componentSubscriptions;
+    /// Messages always subscribed to based on component type
+    static const QMap<ComponentType, QSet<MessageId>> componentSubscriptions;
 
 signals:
     void stateChanged(State state);

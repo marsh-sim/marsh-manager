@@ -48,6 +48,27 @@ private:
 };
 Q_DECLARE_TYPEINFO(ComponentId, Q_PRIMITIVE_TYPE);
 
+class ComponentType
+{
+public:
+    explicit ComponentType(uint8_t value)
+        : _value(value)
+    {}
+
+    static const ComponentType Broadcast;
+
+    bool operator==(const ComponentType &other) const { return _value == other._value; }
+    bool operator!=(const ComponentType &other) const { return !(*this == other); }
+    bool operator<(const ComponentType &other) const { return _value < other._value; }
+    QString toString() const { return QString("%1").arg(_value); }
+    friend int qHash(const ComponentType &Type);
+    uint8_t value() const { return _value; }
+
+private:
+    uint8_t _value;
+};
+Q_DECLARE_TYPEINFO(ComponentType, Q_PRIMITIVE_TYPE);
+
 class MessageId
 {
 public:
