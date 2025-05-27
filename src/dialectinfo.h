@@ -20,7 +20,7 @@ public:
     /// parse XML message definitions to build a database of names and descriptions
     Q_INVOKABLE void loadDefinitions();
     Q_INVOKABLE std::optional<QString> enumValueName(QString enumName, int value);
-    Q_INVOKABLE std::optional<QString> componentName(ComponentId id);
+    Q_INVOKABLE std::optional<QString> componentName(ComponentType type);
 
     QStringList definitionFiles() const;
     bool isReady() const;

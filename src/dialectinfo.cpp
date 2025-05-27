@@ -57,15 +57,15 @@ std::optional<QString> DialectInfo::enumValueName(QString enumName, int value)
     return enums[enumName].entries[value].name;
 }
 
-std::optional<QString> DialectInfo::componentName(ComponentId id)
+std::optional<QString> DialectInfo::componentName(ComponentType type)
 {
-    auto marshName = enumValueName("MARSH_COMPONENT", id.value());
+    auto marshName = enumValueName("MARSH_TYPE", type.value());
     if (marshName) {
-        return marshName->mid(QString("MARSH_COMP_ID_").size());
+        return marshName->mid(QString("MARSH_TYPE_").size());
     }
-    auto mavName = enumValueName("MAV_COMPONENT", id.value());
+    auto mavName = enumValueName("MAV_TYPE", type.value());
     if (mavName) {
-        return mavName->mid(QString("MAV_COMP_ID_").size());
+        return mavName->mid(QString("MAV_TYPE_").size());
     }
     return std::nullopt;
 }

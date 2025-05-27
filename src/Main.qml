@@ -42,32 +42,32 @@ ApplicationWindow {
 
         property real saveStartTime: Number.NaN
 
-        RowLayout {
-            Text {
-                text: qsTr("Listening on port ") + appData.router.listenPort
-                color: palette.text
-            }
+        Text {
+            text: qsTr("Listening on port %1 as system %2 component %3").arg(
+                      appData.router.listenPort).arg(appData.localSystemId).arg(
+                      appData.localComponentId)
+            color: palette.text
+        }
 
-            Text {
-                id: currentTime
-                color: palette.text
+        Text {
+            id: currentTime
+            color: palette.text
 
-                Connections {
-                    target: rootWindow
-                    function onBeforeRendering() {
-                        let text = qsTr("Current time: ")
+            Connections {
+                target: rootWindow
+                function onBeforeRendering() {
+                    let text = qsTr("Current time: ")
 
-                        const time_us = (new Date).getTime() * 1000
-                        text += appData.networkDisplay.formatUpdateTime(time_us)
+                    const time_us = (new Date).getTime() * 1000
+                    text += appData.networkDisplay.formatUpdateTime(time_us)
 
-                        if (!isNaN(statusBar.saveStartTime)) {
-                            text += qsTr(", saving log for: ")
-                            text += formatDuration(
-                                        time_us / 1000 - statusBar.saveStartTime)
-                        }
-
-                        currentTime.text = text
+                    if (!isNaN(statusBar.saveStartTime)) {
+                        text += qsTr(", saving log for: ")
+                        text += formatDuration(
+                                    time_us / 1000 - statusBar.saveStartTime)
                     }
+
+                    currentTime.text = text
                 }
             }
         }
