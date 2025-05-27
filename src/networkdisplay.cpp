@@ -420,6 +420,11 @@ void NetworkDisplay::updateSubscribed(ClientNode *const client)
                                                  order(Column::Name));
     const auto subs = client->subscribedMessages();
 
+    // This may have happened due to receiving the type
+    _model->invisibleRootItem()
+        ->child(clientItem->row(), order(Column::Name))
+        ->setData(QString("%1 at %2").arg(name(client->type), client->connection().toString()), Qt::DisplayRole);
+
     clientItem->child(subscribeItem->row(), order(Column::Updated))
         ->setData(formatUpdateTime(Message::currentTime()), Qt::DisplayRole);
 

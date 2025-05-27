@@ -71,6 +71,7 @@ void ClientNode::receiveMessage(Message message)
             // Automatically subscribe to all messages based on component type
             if (componentSubscriptions.contains(type)) {
                 _subscribedMessages.unite(componentSubscriptions[type]);
+                emit subscribedMessagesChanged(subscribedMessages());
             }
         }
 
