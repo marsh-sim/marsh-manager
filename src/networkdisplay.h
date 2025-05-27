@@ -90,7 +90,7 @@ private:
     QString name(Column column);
     QString name(ClientRow row);
     QString name(ClientNode::State state);
-    QString name(ComponentId component);
+    QString name(ComponentType type);
 
     QVariant stateColor(ClientNode::State state);
 

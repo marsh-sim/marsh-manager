@@ -37,7 +37,7 @@ void NetworkDisplay::addClient(ClientNode *const client)
 {
     auto root = _model->invisibleRootItem();
     auto clientItem = new QStandardItem(
-        QString("Client at %1").arg(client->connection().toString()));
+        QString("%1 at %2").arg(name(client->type), client->connection().toString()));
     clientItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
     auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime(), UpdateReason::Created));
@@ -48,7 +48,7 @@ void NetworkDisplay::addClient(ClientNode *const client)
     frequencyItem->setData(Qt::AlignRight, Qt::TextAlignmentRole);
 
     auto dataItem = new QStandardItem(
-        QString("System %1 %2").arg(client->system.toString(), name(client->component)));
+        QString("System %1 comp %2").arg(client->system.toString(), client->component.toString()));
     dataItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
     auto plotItem = new QStandardItem("0 values");
@@ -299,9 +299,9 @@ void NetworkDisplay::handleClientMessage(ClientNode *const client,
         if (direction == Direction::Sent) {
             auto dataItem = created.at(order(Column::Data));
             dataItem->setData(dataItem->data(Qt::DisplayRole).toString()
-                                  + QString(", from system %1 %2")
+                                  + QString(", from sys %1 comp %2")
                                         .arg(message.senderSystem().toString(),
-                                             name(message.senderComponent())),
+                                             message.senderComponent().toString()),
                               Qt::DisplayRole);
         }
 
@@ -584,12 +584,12 @@ QString NetworkDisplay::name(ClientNode::State value)
     return name;
 }
 
-QString NetworkDisplay::name(ComponentId component)
+QString NetworkDisplay::name(ComponentType type)
 {
-    auto name = appData->dialect()->componentName(component);
+    auto name = appData->dialect()->componentName(type);
     if (name)
         return *name;
-    return QString("Component %1").arg(component.toString());
+    return QString("Type %1").arg(type.toString());
 }
 
 QVariant NetworkDisplay::stateColor(ClientNode::State state)

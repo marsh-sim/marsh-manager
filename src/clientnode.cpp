@@ -210,9 +210,9 @@ void ClientNode::handleCommand(Message message)
 
             { // debug print
                 const auto info = mavlink_get_message_info_by_id(id_num);
-                const auto compName = appData->dialect()->componentName(component);
+                const auto compName = appData->dialect()->componentName(type);
                 if (info && compName) {
-                    auto deb = qDebug().noquote() << "Client in System" << system.toString() << *compName;
+                    auto deb = qDebug().noquote() << compName << "in sys" << system.toString() << "comp" << component.toString();
                     if (result != MAV_RESULT_ACCEPTED) {
                         deb << "failed to setup";
                     } else if (interval == -1) {
@@ -240,10 +240,10 @@ void ClientNode::handleCommand(Message message)
 
             { // debug print
                 const auto info = mavlink_get_message_info_by_id(id_num);
-                const auto compName = appData->dialect()->componentName(component);
+                const auto compName = appData->dialect()->componentName(type);
                 if (info && compName) {
                     auto deb = qDebug().noquote()
-                               << "Client in System" << system.toString() << *compName;
+                               << compName << "in sys" << system.toString() << "comp" << component.toString();
                     if (result != MAV_RESULT_ACCEPTED) {
                         deb << "requested unsupported message";
                     } else {
