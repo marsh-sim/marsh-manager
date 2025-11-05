@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(
   marsh-manager
-  VERSION 0.2.0
+  VERSION 0.2.1
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17) # minimum required by Qt6
@@ -159,6 +159,12 @@ install(
   BUNDLE DESTINATION .
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+qt_generate_deploy_qml_app_script(
+    TARGET appmarsh-manager
+    OUTPUT_SCRIPT deploy_script
+)
+install(SCRIPT ${deploy_script})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # Triggered a lot in MAVLink headers
