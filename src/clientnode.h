@@ -2,7 +2,9 @@
 #define CLIENTNODE_H
 
 #include <QHostAddress>
+#include <QMap>
 #include <QObject>
+#include <QSet>
 #include <QTimer>
 #include <QUdpSocket>
 #include "frequencyestimator.h"
