@@ -70,6 +70,9 @@ void Logger::setSavingNow(bool saving)
         }
         _bytesWritten = 0;
 
+        // Send experiment start command
+        sendExperimentControlCommand(true);
+
         if (_fileComment.size() > 0) {
             // write the file comment as the very first message
             mavlink_statustext_t statustext;
@@ -91,6 +94,9 @@ void Logger::setSavingNow(bool saving)
             writeMessage({dateTime.toMSecsSinceEpoch() * 1000, message_m});
         }
     } else {
+        // Send experiment stop command
+        sendExperimentControlCommand(false);
+
         outputFile->close();
         delete outputFile;
         outputFile = nullptr;
@@ -163,4 +169,37 @@ void Logger::setFileComment(const QString &newFileComment)
     if (!savingNow()) {
         emit outputPathChanged(outputPath());
     }
+}
+
+void Logger::sendExperimentControlCommand(bool enable)
+{
+    // Create command structure
+    mavlink_command_long_t cmd;
+    cmd.target_system = 0;  // Broadcast
+    cmd.target_component = 0;  // Broadcast
+    cmd.command = MAV_CMD_DO_EXPERIMENT_CONTROL;
+    cmd.confirmation = 0;
+    cmd.param1 = enable ? 1.0f : 0.0f;
+    cmd.param2 = 0.0f;
+    cmd.param3 = 0.0f;
+    cmd.param4 = 0.0f;
+    cmd.param5 = 0.0f;
+    cmd.param6 = 0.0f;
+    cmd.param7 = 0.0f;
+
+    // Encode message
+    Message message{Message::currentTime(), {}};
+    mavlink_msg_command_long_encode_chan(
+        appData->localSystemId(),
+        appData->localComponentId(),
+        MAVLINK_COMM_0,
+        &message.m,
+        &cmd);
+
+    // Send to filtered nodes (GENERIC and EMG types)
+    QSet<ComponentType> targetTypes{
+        ComponentType(MAV_TYPE_GENERIC),
+        ComponentType(MARSH_TYPE_EMG)
+    };
+    appData->router()->sendMessageToTypes(message, targetTypes);
 }
