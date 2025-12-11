@@ -39,6 +39,13 @@ int qHash(const ComponentId &id)
     return qHash(id._value);
 }
 
+const ComponentType ComponentType::Broadcast{0};
+
+int qHash(const ComponentType &type)
+{
+    return qHash(type._value);
+}
+
 int qHash(const MessageId &id)
 {
     return qHash(id._value);

@@ -46,6 +46,7 @@ private slots:
 
 private:
     QString formatFilename(std::optional<QDateTime> datetime = std::nullopt) const;
+    void sendExperimentControlCommand(bool enable);
 
     ApplicationData *appData;
     QDir _outputDir;

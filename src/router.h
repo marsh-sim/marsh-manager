@@ -28,6 +28,8 @@ public:
                      ComponentId targetComponent = ComponentId::Broadcast,
                      SystemId targetSystem = SystemId::Broadcast);
 
+    void sendMessageToTypes(Message message, const QSet<ComponentType> &targetTypes);
+
 signals:
     void messageReceived(Message message);
     void messageSent(Message message);

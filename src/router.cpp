@@ -50,6 +50,22 @@ void Router::sendMessage(Message message, ComponentId targetComponent, SystemId 
     }
 }
 
+void Router::sendMessageToTypes(Message message, const QSet<ComponentType> &targetTypes)
+{
+    bool sent = false;
+    for (const auto client : clients) {
+        if (client->state() == ClientNode::State::Connected
+            && targetTypes.contains(client->type)) {
+            client->sendMessage(message);
+            sent = true;
+        }
+    }
+
+    if (sent) {
+        emit messageSent(message);
+    }
+}
+
 void Router::readPendingDatagrams()
 {
     while (udpSocket->hasPendingDatagrams()) {
