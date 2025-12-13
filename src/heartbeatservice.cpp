@@ -22,10 +22,10 @@ void HeartbeatService::setAppData(ApplicationData *appData)
 void HeartbeatService::sendTimerElapsed()
 {
     mavlink_heartbeat_t heartbeat;
-    heartbeat.type = MAV_TYPE_GCS;
+    heartbeat.type = MARSH_TYPE_MANAGER;
     heartbeat.autopilot = MAV_AUTOPILOT_INVALID;
     heartbeat.base_mode = 0; // none of the flags applicable
-    // TODO: Consider sending information about active logging either in custom_mode or system_status
+    // TODO: Consider sending information about active logging either in custom_mode or system_status - we also have MAV_CMD_DO_EXPERIMENT_CONTROL
     heartbeat.custom_mode = 0; // not used so far
     heartbeat.system_status = MAV_STATE_ACTIVE;
 
