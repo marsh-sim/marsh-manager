@@ -36,8 +36,7 @@ void NetworkDisplay::setAppData(ApplicationData *appData)
 void NetworkDisplay::addClient(ClientNode *const client)
 {
     auto root = _model->invisibleRootItem();
-    auto clientItem = new QStandardItem(
-        QString("%1 at %2").arg(name(client->type), client->connection().toString()));
+    auto clientItem = new QStandardItem(formatClient(client));
     clientItem->setData(stateColor(client->state()), Qt::DecorationRole);
 
     auto updateItem = new QStandardItem(formatUpdateTime(Message::currentTime(), UpdateReason::Created));
@@ -415,7 +414,10 @@ void NetworkDisplay::handleParamValue(ClientNode *const client, Message message)
 
 void NetworkDisplay::updateSubscribed(ClientNode *const client)
 {
-    const auto clientItem = clientItems.value(client);
+    auto clientItem = clientItems.value(client);
+    // Changing the type also emits subscription change event
+    clientItem->setData(formatClient(client), Qt::DisplayRole);
+
     const auto subscribeItem = clientItem->child(order(ClientRow::SubscribedMessages),
                                                  order(Column::Name));
     const auto subs = client->subscribedMessages();
@@ -512,7 +514,7 @@ void NetworkDisplay::updateSubscribed(ClientNode *const client)
     }
 }
 
-QString NetworkDisplay::formatFieldData(QVariant data)
+QString NetworkDisplay::formatFieldData(QVariant data) const
 {
     // the approximate number of significant places is 7.2 for float and 16 for double
     // roughly estimated from mantissa width as log10(2^24) and log10(2^53)
@@ -525,10 +527,15 @@ QString NetworkDisplay::formatFieldData(QVariant data)
     }
 }
 
-QString NetworkDisplay::formatPascalCase(QString pascal)
+QString NetworkDisplay::formatPascalCase(QString pascal) const
 {
     static const auto re = QRegularExpression("([a-z])([A-Z])");
     return pascal.left(1) + pascal.mid(1).replace(re, R"(\1 \2)").toLower();
+}
+
+QString NetworkDisplay::formatClient(ClientNode *const client) const
+{
+    return QString("%1 at %2").arg(name(client->type), client->connection().toString());
 }
 
 QString NetworkDisplay::formatUpdateTime(qint64 timestamp, UpdateReason reason)
@@ -556,29 +563,29 @@ QString NetworkDisplay::formatUpdateTime(qint64 timestamp, UpdateReason reason)
     }
 }
 
-int NetworkDisplay::order(Column value)
+int NetworkDisplay::order(Column value) const
 {
     return static_cast<int>(value);
 }
 
-int NetworkDisplay::order(ClientRow value)
+int NetworkDisplay::order(ClientRow value) const
 {
     return static_cast<int>(value);
 }
 
-QString NetworkDisplay::name(Column value)
+QString NetworkDisplay::name(Column value) const
 {
     auto metaEnum = QMetaEnum::fromType<Column>();
     return formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
 }
 
-QString NetworkDisplay::name(ClientRow value)
+QString NetworkDisplay::name(ClientRow value) const
 {
     auto metaEnum = QMetaEnum::fromType<ClientRow>();
     return formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
 }
 
-QString NetworkDisplay::name(ClientNode::State value)
+QString NetworkDisplay::name(ClientNode::State value) const
 {
     auto metaEnum = QMetaEnum::fromType<ClientNode::State>();
     QString name = formatPascalCase(metaEnum.valueToKey(static_cast<int>(value)));
@@ -589,7 +596,7 @@ QString NetworkDisplay::name(ClientNode::State value)
     return name;
 }
 
-QString NetworkDisplay::name(ComponentType type)
+QString NetworkDisplay::name(ComponentType type) const
 {
     auto name = appData->dialect()->componentName(type);
     if (name)
@@ -597,7 +604,7 @@ QString NetworkDisplay::name(ComponentType type)
     return QString("Type %1").arg(type.toString());
 }
 
-QVariant NetworkDisplay::stateColor(ClientNode::State state)
+QVariant NetworkDisplay::stateColor(ClientNode::State state) const
 {
     // For now they need to work with both light and dark background
     switch (state) {

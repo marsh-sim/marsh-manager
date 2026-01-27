@@ -82,17 +82,18 @@ private:
     void handleClientMessage(ClientNode *const client, Message message, Direction direction);
     void handleParamValue(ClientNode *const client, Message message);
     void updateSubscribed(ClientNode *const client);
-    QString formatFieldData(QVariant data);
-    QString formatPascalCase(QString pascal);
+    QString formatFieldData(QVariant data) const;
+    QString formatPascalCase(QString pascal) const;
+    QString formatClient(ClientNode *const client) const;
 
-    int order(Column column);
-    int order(ClientRow row);
-    QString name(Column column);
-    QString name(ClientRow row);
-    QString name(ClientNode::State state);
-    QString name(ComponentType type);
+    int order(Column column) const;
+    int order(ClientRow row) const;
+    QString name(Column column) const;
+    QString name(ClientRow row) const;
+    QString name(ClientNode::State state) const;
+    QString name(ComponentType type) const;
 
-    QVariant stateColor(ClientNode::State state);
+    QVariant stateColor(ClientNode::State state) const;
 
     ApplicationData *appData;
     QStandardItemModel *_model;
