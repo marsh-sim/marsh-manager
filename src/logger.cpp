@@ -71,7 +71,7 @@ void Logger::setSavingNow(bool saving)
         _bytesWritten = 0;
 
         // Send experiment start command
-        sendExperimentControlCommand(true);
+        sendExperimentControlCommand(true, dateTime);
 
         if (_fileComment.size() > 0) {
             // write the file comment as the very first message
@@ -95,7 +95,7 @@ void Logger::setSavingNow(bool saving)
         }
     } else {
         // Send experiment stop command
-        sendExperimentControlCommand(false);
+        sendExperimentControlCommand(false, QDateTime());
 
         outputFile->close();
         delete outputFile;
@@ -171,8 +171,10 @@ void Logger::setFileComment(const QString &newFileComment)
     }
 }
 
-void Logger::sendExperimentControlCommand(bool enable)
+void Logger::sendExperimentControlCommand(bool enable, QDateTime datetime)
 {
+    const int daySeconds = 86400; // Seconds in a day
+
     // Create command structure
     mavlink_command_long_t cmd;
     cmd.target_system = 0;  // Broadcast
@@ -180,8 +182,8 @@ void Logger::sendExperimentControlCommand(bool enable)
     cmd.command = MAV_CMD_DO_EXPERIMENT_CONTROL;
     cmd.confirmation = 0;
     cmd.param1 = enable ? 1.0f : 0.0f;
-    cmd.param2 = 0.0f;
-    cmd.param3 = 0.0f;
+    cmd.param2 = datetime.currentSecsSinceEpoch() / daySeconds; // int division, truncate
+    cmd.param3 = (datetime.currentMSecsSinceEpoch() % (daySeconds * 1000)) / 1000.0f;
     cmd.param4 = 0.0f;
     cmd.param5 = 0.0f;
     cmd.param6 = 0.0f;
@@ -196,10 +198,5 @@ void Logger::sendExperimentControlCommand(bool enable)
         &message.m,
         &cmd);
 
-    // Send to filtered nodes (GENERIC and EMG types)
-    QSet<ComponentType> targetTypes{
-        ComponentType(MAV_TYPE_GENERIC),
-        ComponentType(MARSH_TYPE_EMG)
-    };
-    appData->router()->sendMessageToTypes(message, targetTypes);
+    appData->router()->sendMessage(message, ComponentId::Broadcast, SystemId::Broadcast);
 }
