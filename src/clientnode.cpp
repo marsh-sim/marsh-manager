@@ -288,7 +288,7 @@ const QMap<ComponentType, QSet<MessageId>> ClientNode::componentSubscriptions{
      }},
     {ComponentType(MARSH_TYPE_INSTRUMENTS),
      {
-         MessageId{MAVLINK_MSG_ID_MANUAL_CONTROL},
+         MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL),
          MessageId(MAVLINK_MSG_ID_MANUAL_SETPOINT),
          MessageId(MAVLINK_MSG_ID_SIM_STATE),
          MessageId(MAVLINK_MSG_ID_ATTITUDE),
@@ -300,6 +300,8 @@ const QMap<ComponentType, QSet<MessageId>> ClientNode::componentSubscriptions{
          MessageId(MAVLINK_MSG_ID_SIM_STATE),
          MessageId(MAVLINK_MSG_ID_LOCAL_POSITION_NED),
          MessageId(MAVLINK_MSG_ID_ATTITUDE),
+         MessageId(MAVLINK_MSG_ID_MANUAL_CONTROL),
+         MessageId(MAVLINK_MSG_ID_MANUAL_SETPOINT),
      }},
     {ComponentType(MARSH_TYPE_MOTION_PLATFORM),
      {
