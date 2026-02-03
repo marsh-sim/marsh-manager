@@ -205,8 +205,7 @@ ApplicationWindow {
             }
 
             Flow {
-                anchors.left: parent.left
-                anchors.right: parent.right
+                width: parent.width
                 spacing: 10
 
                 Button {
@@ -268,8 +267,7 @@ ApplicationWindow {
             }
 
             ProgressBar {
-                anchors.left: parent.left
-                anchors.right: parent.right
+                width: parent.width
                 visible: appData.replayer.isReplaying
                 value: appData.replayer.progress
                 
