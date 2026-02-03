@@ -1,0 +1,57 @@
+  To Resume in Next Session:
+
+  1. Switch to the Branch:
+
+   cd /home/zanoni/lavoro/progetti/simulatore/software/MARSH/marsh-manager
+   git checkout add-replay
+
+  2. Check Current Status:
+
+   git status
+   git log -1  # See the last commit (if any)
+
+  3. Reference the Plan:
+
+  The implementation plan is saved at:
+
+   /home/zanoni/.copilot/session-state/15b84ee5-bb1d-412c-88be-ad91690dd1c0/plan.md
+
+  You can view it with: cat ~/.copilot/session-state/15b84ee5-bb1d-412c-88be-ad91690dd1c0/plan.md
+
+  4. What's Done:
+
+   - ✅ Replayer class fully implemented
+   - ✅ UI controls added to Main.qml
+   - ✅ Integration with ApplicationData
+   - ✅ Validation logic for VISUALIZATION-only nodes
+   - ✅ CMakeLists.txt updated
+
+  5. What's Left:
+
+   - Testing the build (you're doing now)
+   - Fixing any compilation errors
+   - Testing with actual .tlog files
+   - Testing validation (connecting non-VISUALIZATION nodes)
+   - Testing playback controls
+   - Potentially adjusting UI or timing behavior based on real-world use
+
+  6. To Tell Copilot in Next Session:
+
+  Simply say something like:
+
+   "I'm working on the add-replay branch for MARSH manager replay functionality. Let me know the current status."
+
+  Or be more specific about what you need:
+
+   "Continue working on the replay functionality on add-replay branch. The build had [describe issues]."
+
+  The branch name add-replay is the key reference point!
+
+ Total usage est:        5 Premium requests
+ API time spent:         4m 27.584s
+ Total session time:     30m 21.958s
+ Total code changes:     +648 -25
+ Breakdown by AI model:
+  claude-sonnet-4.5       894.5k in, 17.4k out, 743.0k cached (Est. 5 Premium requests)
+
+ Resume this session with copilot --resume=15b84ee5-bb1d-412c-88be-ad91690dd1c0

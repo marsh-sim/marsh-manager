@@ -9,6 +9,7 @@
 #include "networkdisplay.h"
 #include "networkdisplayproxy.h"
 #include "parameterservice.h"
+#include "replayer.h"
 #include "router.h"
 
 /// Central object available in QML through `appData` property
@@ -23,6 +24,7 @@ public:
     Q_PROPERTY(NetworkDisplay *networkDisplay READ networkDisplay CONSTANT)
     Q_PROPERTY(NetworkDisplayProxy *displayModel READ displayModel CONSTANT)
     Q_PROPERTY(Logger *logger READ logger CONSTANT)
+    Q_PROPERTY(Replayer *replayer READ replayer CONSTANT)
     Q_PROPERTY(DialectInfo *dialect READ dialect CONSTANT)
     Q_PROPERTY(ParameterService *parameterService READ parameterService CONSTANT)
 
@@ -39,6 +41,7 @@ public:
     NetworkDisplay *networkDisplay() const { return _networkDisplay; }
     NetworkDisplayProxy *displayModel() const { return _displayModel; }
     Logger *logger() const { return _logger; }
+    Replayer *replayer() const { return _replayer; }
     DialectInfo *dialect() const { return _dialect; }
     ParameterService *parameterService() const { return _parameterService; };
 
@@ -58,6 +61,7 @@ signals:
 private:
     Router* _router;
     Logger *_logger;
+    Replayer *_replayer;
     NetworkDisplay *_networkDisplay;
     NetworkDisplayProxy *_displayModel;
     DialectInfo *_dialect;

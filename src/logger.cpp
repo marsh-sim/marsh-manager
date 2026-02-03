@@ -53,6 +53,14 @@ void Logger::setSavingNow(bool saving)
         return; // do nothing on repeated calls
 
     if (saving) {
+        // Check if replaying
+        if (appData->replayer()->isReplaying()) {
+            QMessageBox::critical(qApp->activeWindow(),
+                                  "Error",
+                                  "Cannot record while replaying. Stop replay first.");
+            return;
+        }
+        
         const auto dateTime = QDateTime::fromMSecsSinceEpoch(Message::currentTime() / 1000);
         const QString filePath = _outputDir.filePath(formatFilename(dateTime));
         outputFile = new QFile(filePath, this);

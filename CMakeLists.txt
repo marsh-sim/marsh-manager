@@ -47,6 +47,8 @@ qt_add_qml_module(
   src/networkdisplay.cpp
   src/logger.h
   src/logger.cpp
+  src/replayer.h
+  src/replayer.cpp
   src/appearanceutils.h
   src/appearanceutils.cpp
   src/heartbeatservice.h
