@@ -23,6 +23,7 @@ public:
 
     int listenPort() const { return 24400; }
     QSet<ComponentId> connectedComponents() const;
+    const QList<ClientNode *> &getClients() const { return clients; }
 
     void sendMessage(Message message,
                      ComponentId targetComponent = ComponentId::Broadcast,

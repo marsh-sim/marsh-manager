@@ -10,6 +10,7 @@ ApplicationData::ApplicationData(QObject *parent)
     _networkDisplay = new NetworkDisplay(this);
     _displayModel = new NetworkDisplayProxy(this);
     _logger = new Logger(this);
+    _replayer = new Replayer(this);
     _heartbeatService = new HeartbeatService(this);
     _parameterService = new ParameterService(this);
     _dialect = new DialectInfo(this);
@@ -19,6 +20,7 @@ ApplicationData::ApplicationData(QObject *parent)
     _networkDisplay->setAppData(this);
     _displayModel->setAppData(this);
     _logger->setAppData(this);
+    _replayer->setAppData(this);
     _heartbeatService->setAppData(this);
     _parameterService->setAppData(this);
 }

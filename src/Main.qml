@@ -175,6 +175,149 @@ ApplicationWindow {
                 }
             }
         }
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: palette.mid
+            visible: replaySection.visible
+        }
+
+        Column {
+            id: replaySection
+            anchors.left: parent.left
+            anchors.right: parent.right
+            spacing: 10
+            visible: true
+
+            Text {
+                text: qsTr("Replay Controls")
+                font.bold: true
+                color: palette.text
+            }
+
+            Text {
+                text: qsTr("Selected file: ") + (appData.replayer.currentFile || qsTr("None"))
+                color: palette.text
+                wrapMode: Text.WrapAnywhere
+                width: parent.width
+            }
+
+            Flow {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                spacing: 10
+
+                Button {
+                    text: qsTr("Select replay file")
+                    enabled: !appData.replayer.isReplaying
+                    onClicked: {
+                        const filePath = appData.replayer.selectFileWithDialog()
+                        if (filePath && filePath.length > 0) {
+                            // File selected but not started yet
+                        }
+                    }
+                }
+
+                Button {
+                    text: qsTr("Start replay")
+                    enabled: !appData.replayer.isReplaying && appData.replayer.currentFile.length > 0
+                    onClicked: {
+                        if (!appData.replayer.startReplay(appData.replayer.currentFile)) {
+                            // Error is shown via errorOccurred signal
+                        }
+                    }
+                }
+
+                Button {
+                    text: appData.replayer.isPaused ? qsTr("Resume") : qsTr("Pause")
+                    enabled: appData.replayer.isReplaying
+                    onClicked: {
+                        if (appData.replayer.isPaused) {
+                            appData.replayer.resumeReplay()
+                        } else {
+                            appData.replayer.pauseReplay()
+                        }
+                    }
+                }
+
+                Button {
+                    text: qsTr("Stop replay")
+                    enabled: appData.replayer.isReplaying
+                    onClicked: appData.replayer.stopReplay()
+                }
+
+                Text {
+                    text: qsTr("Speed:")
+                    color: palette.text
+                    anchors.verticalCenter: speedCombo.verticalCenter
+                    enabled: appData.replayer.isReplaying
+                }
+
+                ComboBox {
+                    id: speedCombo
+                    model: ["0.5x", "1x", "2x", "5x"]
+                    currentIndex: 1
+                    enabled: appData.replayer.isReplaying
+                    onActivated: {
+                        const speeds = [0.5, 1.0, 2.0, 5.0]
+                        appData.replayer.playbackSpeed = speeds[currentIndex]
+                    }
+                }
+            }
+
+            ProgressBar {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                visible: appData.replayer.isReplaying
+                value: appData.replayer.progress
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: qsTr("Replay: ") + Math.round(appData.replayer.progress * 100) + "%"
+                    color: palette.text
+                }
+            }
+        }
+
+        Connections {
+            target: appData.replayer
+            function onErrorOccurred(error) {
+                errorDialog.text = error
+                errorDialog.open()
+            }
+            function onReplayFinished() {
+                replayFinishedDialog.open()
+            }
+        }
+
+        Dialog {
+            id: errorDialog
+            title: qsTr("Replay Error")
+            property alias text: errorText.text
+            modal: true
+            standardButtons: Dialog.Ok
+            anchors.centerIn: parent
+
+            Text {
+                id: errorText
+                color: palette.text
+            }
+        }
+
+        Dialog {
+            id: replayFinishedDialog
+            title: qsTr("Replay Finished")
+            modal: true
+            standardButtons: Dialog.Ok
+            anchors.centerIn: parent
+
+            Text {
+                text: qsTr("Replay has finished successfully.")
+                color: palette.text
+            }
+        }
     }
 
     NetworkView {
