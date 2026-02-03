@@ -250,7 +250,6 @@ ApplicationWindow {
                 Text {
                     text: qsTr("Speed:")
                     color: palette.text
-                    anchors.verticalCenter: speedCombo.verticalCenter
                     enabled: appData.replayer.isReplaying
                 }
 
