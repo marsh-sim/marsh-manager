@@ -33,6 +33,7 @@ QString Replayer::selectFileWithDialog()
     if (!filePath.isEmpty()) {
         _currentFile = filePath;
         emit currentFileChanged(_currentFile);
+        loadFileDuration(filePath);
         checkCanStartReplay();
     }
     
@@ -364,4 +365,73 @@ void Replayer::cleanup()
         replayFile = nullptr;
     }
     messages.clear();
+}
+
+void Replayer::loadFileDuration(const QString &filePath)
+{
+    QFile file(filePath);
+    
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Could not open file to read duration:" << filePath;
+        _totalDuration = 0.0;
+        emit totalDurationChanged(_totalDuration);
+        return;
+    }
+
+    QByteArray buffer;
+    qint64 firstTimestamp = 0;
+    qint64 lastTimestamp = 0;
+    bool foundFirst = false;
+    
+    // Read first timestamp
+    buffer = file.read(sizeof(qint64));
+    if (buffer.size() == sizeof(qint64)) {
+        firstTimestamp = qFromBigEndian<qint64>(buffer.data());
+        foundFirst = true;
+        
+        // Skip to near the end to find last timestamp
+        // We need to parse the last message properly, so go back a bit and scan
+        qint64 fileSize = file.size();
+        if (fileSize > 1024) {
+            file.seek(fileSize - 1024); // Start from last 1KB
+        }
+        
+        // Parse through remaining messages to find the last one
+        mavlink_message_t message_m;
+        mavlink_status_t parser_status;
+        
+        while (!file.atEnd()) {
+            // Read timestamp
+            buffer = file.read(sizeof(qint64));
+            if (buffer.size() != sizeof(qint64)) {
+                break;
+            }
+            qint64 timestamp = qFromBigEndian<qint64>(buffer.data());
+            
+            // Skip the MAVLink message bytes
+            bool messageComplete = false;
+            while (!file.atEnd() && !messageComplete) {
+                buffer = file.read(1);
+                if (buffer.isEmpty())
+                    break;
+                    
+                if (mavlink_parse_char(MAVLINK_COMM_1, (uint8_t)buffer[0], &message_m, &parser_status)) {
+                    lastTimestamp = timestamp;
+                    messageComplete = true;
+                }
+            }
+        }
+    }
+    
+    file.close();
+    
+    if (foundFirst && lastTimestamp >= firstTimestamp) {
+        _totalDuration = (lastTimestamp - firstTimestamp) / 1000000.0; // Convert to seconds
+        emit totalDurationChanged(_totalDuration);
+        qInfo() << "File duration:" << _totalDuration << "seconds";
+    } else {
+        _totalDuration = 0.0;
+        emit totalDurationChanged(_totalDuration);
+        qWarning() << "Could not determine file duration";
+    }
 }
