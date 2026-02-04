@@ -201,7 +201,11 @@ ApplicationWindow {
                 text: {
                     if (appData.replayer.currentFile.length > 0) {
                         const filename = appData.replayer.currentFile.split('/').pop()
-                        return qsTr("Selected file: ") + filename
+                        let result = qsTr("Selected file: ") + filename
+                        if (appData.replayer.totalDuration > 0) {
+                            result += " (" + appData.replayer.totalDuration.toFixed(2) + "s)"
+                        }
+                        return result
                     } else {
                         return qsTr("Selected file: None")
                     }
@@ -336,13 +340,6 @@ ApplicationWindow {
                     }
                     cursorShape: Qt.PointingHandCursor
                 }
-            }
-
-            Text {
-                visible: appData.replayer.currentFile.length > 0 && !appData.replayer.isReplaying && appData.replayer.totalDuration > 0
-                text: qsTr("Duration: ") + appData.replayer.totalDuration.toFixed(2) + "s"
-                color: palette.mid
-                font.italic: true
             }
         }
 
