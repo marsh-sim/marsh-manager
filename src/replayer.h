@@ -22,6 +22,7 @@ public:
     Q_PROPERTY(double playbackSpeed READ playbackSpeed WRITE setPlaybackSpeed NOTIFY playbackSpeedChanged FINAL)
     Q_PROPERTY(bool isPaused READ isPaused NOTIFY isPausedChanged FINAL)
     Q_PROPERTY(double totalDuration READ totalDuration NOTIFY totalDurationChanged FINAL)
+    Q_PROPERTY(bool canStartReplay READ canStartReplay NOTIFY canStartReplayChanged FINAL)
 
     Q_INVOKABLE QString selectFileWithDialog();
     Q_INVOKABLE bool startReplay(const QString &filePath);
@@ -29,6 +30,7 @@ public:
     Q_INVOKABLE void resumeReplay();
     Q_INVOKABLE void stopReplay();
     Q_INVOKABLE bool validateConnectedNodes();
+    Q_INVOKABLE void checkCanStartReplay();
 
     bool isReplaying() const { return _isReplaying; }
     QString currentFile() const { return _currentFile; }
@@ -36,6 +38,7 @@ public:
     double playbackSpeed() const { return _playbackSpeed; }
     bool isPaused() const { return _isPaused; }
     double totalDuration() const { return _totalDuration; }
+    bool canStartReplay() const { return _canStartReplay; }
 
     void setPlaybackSpeed(double speed);
 
@@ -48,6 +51,7 @@ signals:
     void totalDurationChanged(double duration);
     void errorOccurred(QString error);
     void replayFinished();
+    void canStartReplayChanged(bool canStart);
 
 private slots:
     void sendNextMessage();
@@ -66,6 +70,7 @@ private:
     QString _currentFile;
     bool _isReplaying = false;
     bool _isPaused = false;
+    bool _canStartReplay = false;
     double _playbackSpeed = 1.0;
     double _progress = 0.0;
     double _totalDuration = 0.0;

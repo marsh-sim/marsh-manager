@@ -25,10 +25,18 @@ QString Replayer::selectFileWithDialog()
     QDir defaultDir = QDir::home();
     defaultDir.cd("marsh-logs");
 
-    return QFileDialog::getOpenFileName(nullptr,
+    QString filePath = QFileDialog::getOpenFileName(nullptr,
                                         "Select replay file",
                                         defaultDir.absolutePath(),
                                         "TLog files (*.tlog);;All files (*)");
+    
+    if (!filePath.isEmpty()) {
+        _currentFile = filePath;
+        emit currentFileChanged(_currentFile);
+        checkCanStartReplay();
+    }
+    
+    return filePath;
 }
 
 bool Replayer::validateConnectedNodes()
@@ -59,6 +67,42 @@ bool Replayer::validateConnectedNodes()
     }
 
     return true;
+}
+
+void Replayer::checkCanStartReplay()
+{
+    bool canStart = !_currentFile.isEmpty() && 
+                    !_isReplaying &&
+                    !appData->logger()->savingNow();
+    
+    if (canStart) {
+        // Silently check node validation without emitting errors
+        if (!appData || !appData->router()) {
+            canStart = false;
+        } else {
+            const auto &clients = appData->router()->getClients();
+            bool hasVisualization = false;
+            bool hasOtherNodes = false;
+            
+            for (const auto *client : clients) {
+                if (client->state() == ClientNode::State::Connected) {
+                    if (client->type == ComponentType(MARSH_TYPE_VISUALISATION)) {
+                        hasVisualization = true;
+                    } else {
+                        hasOtherNodes = true;
+                        break;
+                    }
+                }
+            }
+            
+            canStart = hasVisualization && !hasOtherNodes;
+        }
+    }
+    
+    if (_canStartReplay != canStart) {
+        _canStartReplay = canStart;
+        emit canStartReplayChanged(_canStartReplay);
+    }
 }
 
 bool Replayer::startReplay(const QString &filePath)

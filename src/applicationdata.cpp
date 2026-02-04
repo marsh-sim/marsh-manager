@@ -23,6 +23,10 @@ ApplicationData::ApplicationData(QObject *parent)
     _replayer->setAppData(this);
     _heartbeatService->setAppData(this);
     _parameterService->setAppData(this);
+    
+    // Connect router signals to update replay availability
+    connect(_router, &Router::connectedComponentsChanged, _replayer, &Replayer::checkCanStartReplay);
+    connect(_logger, &Logger::savingNowChanged, _replayer, &Replayer::checkCanStartReplay);
 }
 
 quint8 ApplicationData::localSystemId() const
