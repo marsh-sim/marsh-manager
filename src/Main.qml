@@ -278,22 +278,41 @@ ApplicationWindow {
                 Text {
                     text: qsTr("Speed:")
                     color: palette.text
-                    enabled: appData.replayer.isReplaying
+                    enabled: !appData.replayer.isReplaying
                 }
 
-                ComboBox {
-                    id: speedCombo
-                    model: ["0.5x", "1x", "2x", "5x"]
-                    currentIndex: 1
-                    enabled: appData.replayer.isReplaying
-                    onActivated: {
-                        const speeds = [0.5, 1.0, 2.0, 5.0]
-                        appData.replayer.playbackSpeed = speeds[currentIndex]
+                SpinBox {
+                    id: speedSpinBox
+                    from: 10  // 0.1x in units of 0.01x
+                    to: 1000  // 10x in units of 0.01x
+                    value: 100  // 1.0x
+                    stepSize: 10
+                    enabled: !appData.replayer.isReplaying
+                    
+                    property int decimals: 2
+                    property real realValue: value / 100.0
+                    
+                    validator: DoubleValidator {
+                        bottom: Math.min(speedSpinBox.from, speedSpinBox.to)
+                        top: Math.max(speedSpinBox.from, speedSpinBox.to)
+                    }
+                    
+                    textFromValue: function(value, locale) {
+                        return Number(value / 100.0).toLocaleString(locale, 'f', speedSpinBox.decimals) + 'x'
+                    }
+                    
+                    valueFromText: function(text, locale) {
+                        return Number.fromLocaleString(locale, text.replace('x', '')) * 100
+                    }
+                    
+                    onValueModified: {
+                        appData.replayer.playbackSpeed = realValue
                     }
                 }
             }
 
             ProgressBar {
+                id: replayProgressBar
                 width: parent.width
                 visible: appData.replayer.isReplaying
                 value: appData.replayer.progress
@@ -302,6 +321,15 @@ ApplicationWindow {
                     anchors.centerIn: parent
                     text: qsTr("Replay: ") + Math.round(appData.replayer.progress * 100) + "%"
                     color: palette.text
+                }
+                
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: function(mouse) {
+                        const clickProgress = mouse.x / width
+                        appData.replayer.seekToProgress(clickProgress)
+                    }
+                    cursorShape: Qt.PointingHandCursor
                 }
             }
         }

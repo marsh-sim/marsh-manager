@@ -199,8 +199,8 @@ void Replayer::stopReplay()
 
 void Replayer::setPlaybackSpeed(double speed)
 {
-    if (speed <= 0.0 || speed > 10.0) {
-        qWarning() << "Invalid playback speed:" << speed;
+    if (speed < 0.1 || speed > 10.0) {
+        qWarning() << "Invalid playback speed:" << speed << "(must be between 0.1 and 10.0)";
         return;
     }
 
@@ -216,6 +216,35 @@ void Replayer::setPlaybackSpeed(double speed)
 
     _playbackSpeed = speed;
     emit playbackSpeedChanged(_playbackSpeed);
+}
+
+void Replayer::seekToProgress(double progress)
+{
+    if (!_isReplaying || messages.isEmpty())
+        return;
+    
+    // Clamp progress between 0 and 1
+    progress = qBound(0.0, progress, 1.0);
+    
+    // Calculate new message index
+    qsizetype newIndex = qRound(progress * (messages.size() - 1));
+    newIndex = qBound<qsizetype>(0, newIndex, messages.size() - 1);
+    
+    currentMessageIndex = newIndex;
+    
+    // Adjust replay start time to match the new position
+    qint64 currentTime = Message::currentTime();
+    qint64 elapsedReplayTime = 0;
+    if (currentMessageIndex > 0) {
+        elapsedReplayTime = (messages[currentMessageIndex].timestamp - firstMessageTimestamp) / _playbackSpeed;
+    }
+    replayStartTime = currentTime - elapsedReplayTime;
+    
+    // Update progress
+    _progress = static_cast<double>(currentMessageIndex) / messages.size();
+    emit progressChanged(_progress);
+    
+    qInfo() << "Seeked to" << QString::number(progress * 100, 'f', 1) << "% (message" << currentMessageIndex << "of" << messages.size() << ")";
 }
 
 void Replayer::sendNextMessage()
