@@ -198,10 +198,18 @@ ApplicationWindow {
             }
 
             Text {
-                text: qsTr("Selected file: ") + (appData.replayer.currentFile || qsTr("None"))
-                color: palette.text
+                text: {
+                    if (appData.replayer.currentFile.length > 0) {
+                        const filename = appData.replayer.currentFile.split('/').pop()
+                        return qsTr("Selected file: ") + filename
+                    } else {
+                        return qsTr("Selected file: None")
+                    }
+                }
+                color: appData.replayer.currentFile.length > 0 ? palette.text : palette.mid
                 wrapMode: Text.WrapAnywhere
                 width: parent.width
+                font.italic: appData.replayer.currentFile.length === 0
             }
 
             Flow {
@@ -212,16 +220,13 @@ ApplicationWindow {
                     text: qsTr("Select replay file")
                     enabled: !appData.replayer.isReplaying
                     onClicked: {
-                        const filePath = appData.replayer.selectFileWithDialog()
-                        if (filePath && filePath.length > 0) {
-                            // File selected but not started yet
-                        }
+                        appData.replayer.selectFileWithDialog()
                     }
                 }
 
                 Button {
                     text: qsTr("Start replay")
-                    enabled: !appData.replayer.isReplaying && appData.replayer.currentFile.length > 0
+                    enabled: appData.replayer.canStartReplay
                     onClicked: {
                         if (!appData.replayer.startReplay(appData.replayer.currentFile)) {
                             // Error is shown via errorOccurred signal
