@@ -319,8 +319,13 @@ ApplicationWindow {
                 
                 Text {
                     anchors.centerIn: parent
-                    text: qsTr("Replay: ") + Math.round(appData.replayer.progress * 100) + "%"
+                    text: {
+                        const currentTime = (appData.replayer.progress * appData.replayer.totalDuration).toFixed(2)
+                        const totalTime = appData.replayer.totalDuration.toFixed(2)
+                        return currentTime + "s / " + totalTime + "s"
+                    }
                     color: palette.text
+                    font.pixelSize: 11
                 }
                 
                 MouseArea {
@@ -331,6 +336,13 @@ ApplicationWindow {
                     }
                     cursorShape: Qt.PointingHandCursor
                 }
+            }
+
+            Text {
+                visible: appData.replayer.currentFile.length > 0 && !appData.replayer.isReplaying && appData.replayer.totalDuration > 0
+                text: qsTr("Duration: ") + appData.replayer.totalDuration.toFixed(2) + "s"
+                color: palette.mid
+                font.italic: true
             }
         }
 
