@@ -212,6 +212,29 @@ ApplicationWindow {
                 font.italic: appData.replayer.currentFile.length === 0
             }
 
+            Text {
+                visible: appData.replayer.currentFile.length > 0 && !appData.replayer.canStartReplay && !appData.replayer.isReplaying
+                text: {
+                    if (appData.logger.savingNow) {
+                        return qsTr("⚠ Stop recording before starting replay")
+                    } else {
+                        return qsTr("⚠ Ensure only VISUALIZATION nodes are connected to start replay")
+                    }
+                }
+                color: "orange"
+                wrapMode: Text.WordWrap
+                width: parent.width
+                font.bold: true
+            }
+
+            Text {
+                visible: appData.replayer.canStartReplay && !appData.replayer.isReplaying
+                text: qsTr("✓ Ready to start replay")
+                color: "green"
+                width: parent.width
+                font.bold: true
+            }
+
             Flow {
                 width: parent.width
                 spacing: 10
