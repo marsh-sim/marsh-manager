@@ -32,6 +32,7 @@ public:
     Q_INVOKABLE bool validateConnectedNodes();
     Q_INVOKABLE void checkCanStartReplay();
     Q_INVOKABLE void seekToProgress(double progress);
+    Q_INVOKABLE void loadFileDuration(const QString &filePath);
 
     bool isReplaying() const { return _isReplaying; }
     QString currentFile() const { return _currentFile; }
