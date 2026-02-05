@@ -282,7 +282,7 @@ ApplicationWindow {
                 Text {
                     text: qsTr("Speed:")
                     color: palette.text
-                    enabled: !appData.replayer.isReplaying
+                    enabled: !appData.replayer.isReplaying || appData.replayer.isPaused
                 }
 
                 SpinBox {
@@ -291,7 +291,7 @@ ApplicationWindow {
                     to: 1000  // 10x in units of 0.01x
                     value: 100  // 1.0x
                     stepSize: 10
-                    enabled: !appData.replayer.isReplaying
+                    enabled: !appData.replayer.isReplaying || appData.replayer.isPaused
                     
                     property int decimals: 2
                     property real realValue: value / 100.0
