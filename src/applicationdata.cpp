@@ -26,6 +26,11 @@ ApplicationData::ApplicationData(QObject *parent)
     
     // Connect router signals to update replay availability
     connect(_router, &Router::connectedComponentsChanged, _replayer, &Replayer::checkCanStartReplay);
+    connect(_router, &Router::clientAdded, this, [this](ClientNode *client) {
+        // When a new client is added or reconnects, update replay state
+        connect(client, &ClientNode::stateChanged, _replayer, &Replayer::checkCanStartReplay, Qt::UniqueConnection);
+        _replayer->checkCanStartReplay();
+    });
     connect(_logger, &Logger::savingNowChanged, _replayer, &Replayer::checkCanStartReplay);
 }
 
