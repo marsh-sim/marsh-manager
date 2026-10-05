@@ -46,7 +46,7 @@ mkdir -p "$OUT_DIR"
 
 QT_QPA_PLATFORM=offscreen "$BINARY" > "$OUT_DIR/manager.log" 2>&1 &
 MANAGER=$!
-trap 'kill $MANAGER 2> /dev/null; wait $MANAGER 2> /dev/null' EXIT
+trap 'status=$?; kill $MANAGER 2> /dev/null; wait $MANAGER 2> /dev/null || true; exit $status' EXIT
 sleep 3
 
 echo "== $(git -C "$REPO_ROOT" describe --tags --always --dirty) $(basename "$BINARY"), listeners: $LISTENERS"
