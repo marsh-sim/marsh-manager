@@ -53,9 +53,13 @@ ApplicationWindow {
             id: currentTime
             color: palette.text
 
-            Connections {
-                target: rootWindow
-                function onBeforeRendering() {
+            // Updating the text on every frame would keep the window rendering continuously
+            Timer {
+                interval: 100
+                running: true
+                repeat: true
+                triggeredOnStart: true
+                onTriggered: {
                     let text = qsTr("Current time: ")
 
                     const time_us = (new Date).getTime() * 1000

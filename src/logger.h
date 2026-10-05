@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QObject>
+#include <QTimer>
 #include "message.h"
 
 class ApplicationData;
@@ -42,7 +43,8 @@ signals:
     void bytesWrittenChanged(double written);
 
 private slots:
-    void writeMessage(Message message);
+    void writeMessage(const Message &message);
+    void notifyBytesWritten();
 
 private:
     QString formatFilename(std::optional<QDateTime> datetime = std::nullopt) const;
@@ -53,6 +55,9 @@ private:
     QFile *outputFile = nullptr;
     QString _fileComment;
     std::optional<qint64> _bytesWritten;
+    /// Limits the notifications to QML, instead of sending one for every message
+    QTimer *bytesWrittenTimer;
+    std::optional<qint64> notifiedBytesWritten;
 };
 
 #endif // LOGGER_H

@@ -263,28 +263,29 @@ void Replayer::sendNextMessage()
     qint64 elapsedRealTime = currentTime - replayStartTime;
     
     // Send all messages that should have been sent by now
+    const auto startIndex = currentMessageIndex;
     while (currentMessageIndex < messages.size()) {
         const auto &entry = messages[currentMessageIndex];
         qint64 messageDelay = (entry.timestamp - firstMessageTimestamp) / _playbackSpeed;
-        
+
         if (messageDelay <= elapsedRealTime) {
             // Send this message
             Message msg{currentTime, entry.message};
             appData->router()->sendMessage(msg, ComponentId::Broadcast, SystemId::Broadcast);
-            
+
             currentMessageIndex++;
-            
-            // Update progress
-            if (messages.size() > 0) {
-                _progress = static_cast<double>(currentMessageIndex) / messages.size();
-                emit progressChanged(_progress);
-            }
         } else {
             // This message is not ready yet
             break;
         }
     }
-    
+
+    // Update progress once per timer tick, notifying QML for every message is too costly
+    if (currentMessageIndex != startIndex) {
+        _progress = static_cast<double>(currentMessageIndex) / messages.size();
+        emit progressChanged(_progress);
+    }
+
     // Check if we've finished
     if (currentMessageIndex >= messages.size()) {
         stopReplay();

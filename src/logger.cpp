@@ -18,6 +18,10 @@ Logger::Logger(QObject *parent)
         msgBox.exec();
     }
     _outputDir.cd(dirName);
+
+    bytesWrittenTimer = new QTimer(this);
+    bytesWrittenTimer->setInterval(250);
+    connect(bytesWrittenTimer, &QTimer::timeout, this, &Logger::notifyBytesWritten);
 }
 
 void Logger::setAppData(ApplicationData *appData)
@@ -77,6 +81,7 @@ void Logger::setSavingNow(bool saving)
             return;
         }
         _bytesWritten = 0;
+        bytesWrittenTimer->start();
 
         // Send experiment start command
         sendExperimentControlCommand(true, dateTime);
@@ -105,6 +110,7 @@ void Logger::setSavingNow(bool saving)
         // Send experiment stop command
         sendExperimentControlCommand(false, QDateTime());
 
+        bytesWrittenTimer->stop();
         outputFile->close();
         delete outputFile;
         outputFile = nullptr;
@@ -112,6 +118,7 @@ void Logger::setSavingNow(bool saving)
 
     emit savingNowChanged(savingNow());
     emit outputPathChanged(outputPath());
+    notifiedBytesWritten = _bytesWritten;
     emit bytesWrittenChanged(bytesWritten());
 }
 
@@ -123,7 +130,7 @@ void Logger::setOutputDir(QString dir)
     emit outputPathChanged(outputPath());
 }
 
-void Logger::writeMessage(Message message)
+void Logger::writeMessage(const Message &message)
 {
     if (!savingNow())
         return;
@@ -137,7 +144,14 @@ void Logger::writeMessage(Message message)
     const auto length = mavlink_msg_to_send_buffer((quint8 *) write_buffer.data(), &message.m);
     outputFile->write(write_buffer, length);
     *_bytesWritten += length;
+}
 
+void Logger::notifyBytesWritten()
+{
+    if (_bytesWritten == notifiedBytesWritten)
+        return;
+
+    notifiedBytesWritten = _bytesWritten;
     emit bytesWrittenChanged(bytesWritten());
 }
 
