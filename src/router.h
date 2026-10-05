@@ -2,6 +2,7 @@
 #define ROUTER_H
 
 #include <QElapsedTimer>
+#include <QHash>
 #include <QObject>
 #include <QUdpSocket>
 #include <QtQmlIntegration>
@@ -32,22 +33,31 @@ public:
     void sendMessageToTypes(Message message, const QSet<ComponentType> &targetTypes);
 
 signals:
-    void messageReceived(Message message);
-    void messageSent(Message message);
+    void messageReceived(const Message &message);
+    void messageSent(const Message &message);
     void clientAdded(ClientNode *client);
+    /// Emitted before the client is deleted
+    void clientRemoved(ClientNode *client);
     void connectedComponentsChanged(QSet<ComponentId> components);
 
 private slots:
     void readPendingDatagrams();
-    void clientStateChanged(ClientNode::State state);
+    void updateClientStates();
+    void removeSupersededClients();
 
 private:
+    using SysComp = QPair<SystemId, ComponentId>;
+
     void receiveMessage(ClientNode::Connection connection, Message message);
+    /// Client owning each system and component id pair, the others with same ids are shadowed
+    QHash<SysComp, ClientNode *> clientOwners() const;
 
     QUdpSocket *udpSocket = nullptr;
 
     /// List of clients in order of connecting.
     QList<ClientNode *> clients;
+    /// Guards against recursion, as updating client states emits their stateChanged
+    bool updatingClientStates = false;
 
     ApplicationData *appData;
 };

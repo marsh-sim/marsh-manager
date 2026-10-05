@@ -1,6 +1,7 @@
 #include "router.h"
 
 #include <QDateTime>
+#include <QHash>
 #include <QMetaEnum>
 #include <QNetworkDatagram>
 #include "applicationdata.h"
@@ -87,29 +88,75 @@ void Router::readPendingDatagrams()
     }
 }
 
-void Router::clientStateChanged(ClientNode::State state)
+void Router::updateClientStates()
 {
+    if (updatingClientStates)
+        return; // the outer call handles the state changes it caused
+    updatingClientStates = true;
+
     const auto oldComponents = connectedComponents();
 
-    using SysComp = QPair<SystemId, ComponentId>;
-    QSet<SysComp> connected_sys_comp{};
-
-    for (auto client : clients) { // iterate in order of connecting
-        if (client->state() == ClientNode::State::TimedOut)
-            continue;
-
-        SysComp sys_comp{client->system, client->component};
-        if (!connected_sys_comp.contains(sys_comp)) {
-            client->setShadowed(false);
-            connected_sys_comp.insert(sys_comp);
-        } else {
-            client->setShadowed(true);
-        }
+    const auto owners = clientOwners();
+    bool anySuperseded = false;
+    for (const auto client : std::as_const(clients)) {
+        const auto state = client->state();
+        if (state == ClientNode::State::Connected || state == ClientNode::State::Shadowed)
+            client->setShadowed(owners.value({client->system, client->component}) != client);
+        else if (state == ClientNode::State::TimedOut
+                 && owners.contains({client->system, client->component}))
+            anySuperseded = true;
     }
+
+    updatingClientStates = false;
+
+    // Removing a client here would delete its display while it's still emitting stateChanged
+    if (anySuperseded)
+        QMetaObject::invokeMethod(this, &Router::removeSupersededClients, Qt::QueuedConnection);
 
     const auto components = connectedComponents();
     if (components != oldComponents)
         emit connectedComponentsChanged(components);
+}
+
+void Router::removeSupersededClients()
+{
+    // Timed out clients with the ids now used by another client won't come back on their port
+    const auto owners = clientOwners();
+    QList<ClientNode *> superseded;
+    for (const auto client : std::as_const(clients)) {
+        if (client->state() == ClientNode::State::TimedOut
+            && owners.contains({client->system, client->component})) {
+            superseded.push_back(client);
+        }
+    }
+
+    for (const auto client : std::as_const(superseded)) {
+        qDebug().noquote() << "removing" << client->connection().toString()
+                           << "superseded by a client with the same system and component id";
+        clients.removeOne(client);
+        emit clientRemoved(client);
+        client->disconnect(); // in case it emits anything before deletion
+        client->deleteLater();
+    }
+}
+
+QHash<Router::SysComp, ClientNode *> Router::clientOwners() const
+{
+    // In order of connecting, the first active client owns the ids. A later client from the same
+    // address takes over, as it is most likely a restarted node with a new port, and the previous
+    // one would block it until timing out.
+    QHash<SysComp, ClientNode *> owners;
+    for (const auto client : std::as_const(clients)) {
+        if (client->state() != ClientNode::State::Connected
+            && client->state() != ClientNode::State::Shadowed)
+            continue;
+
+        const SysComp sysComp{client->system, client->component};
+        const auto owner = owners.value(sysComp, nullptr);
+        if (!owner || owner->connection().address == client->connection().address)
+            owners.insert(sysComp, client);
+    }
+    return owners;
 }
 
 void Router::receiveMessage(ClientNode::Connection connection, Message message)
@@ -130,37 +177,28 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
         if (it != std::end(clients)) {
             client = *it;
         } else {
-            ClientNode::State state = ClientNode::State::Unregistered;
             // only register clients when receiving heartbeat
-            if (message.id() == MessageId(MAVLINK_MSG_ID_HEARTBEAT)) {
-                // look for already connected clients with the same system and component id
-                it = std::find_if(clients.cbegin(), clients.cend(), [&](const ClientNode *c) {
-                    return c->system == message.senderSystem()
-                           && c->component == message.senderComponent()
-                           && c->state() == ClientNode::State::Connected;
-                });
-                bool syscomp_free = it == std::end(clients);
-                state = syscomp_free ? ClientNode::State::Connected : ClientNode::State::Shadowed;
-
-                if (syscomp_free) {
-                    emit connectedComponentsChanged(connectedComponents());
-                    messageDebug() << "registered a new client";
-                } else
-                    messageDebug() << "another client for component" << message.m.compid
-                                   << "in system" << message.m.sysid;
-            } else {
-                messageDebug()
-                    << "addding unregistered client, send HEARTBEAT for normal operation";
-            }
-
+            const bool registered = message.id() == MessageId(MAVLINK_MSG_ID_HEARTBEAT);
             client = new ClientNode(this,
                                     connection,
                                     message.senderSystem(),
                                     message.senderComponent(),
-                                    state);
+                                    registered ? ClientNode::State::Connected
+                                               : ClientNode::State::Unregistered);
             client->setAppData(appData);
             clients.push_back(client);
-            connect(client, &ClientNode::stateChanged, this, &Router::clientStateChanged);
+            connect(client, &ClientNode::stateChanged, this, &Router::updateClientStates);
+            // decides whether this or another client with the same ids is shadowed
+            updateClientStates();
+
+            if (!registered)
+                messageDebug() << "addding unregistered client, send HEARTBEAT for normal operation";
+            else if (client->shadowed())
+                messageDebug() << "another client for component" << message.m.compid
+                               << "in system" << message.m.sysid;
+            else
+                messageDebug() << "registered a new client";
+
             emit clientAdded(client);
         }
     }
@@ -172,10 +210,10 @@ void Router::receiveMessage(ClientNode::Connection connection, Message message)
 
     emit messageReceived(message);
 
-    // pass the message to every subscriber
-    for (const auto listener : clients) {
-        if (listener->customMode() == ClientNode::CustomMode::AllMessages
-            || listener->subscribedMessages().contains(message.id())) {
+    // pass the message to every subscriber, except those no longer sending heartbeats
+    for (const auto listener : std::as_const(clients)) {
+        if (listener->state() != ClientNode::State::TimedOut
+            && listener->isSubscribed(message.id())) {
             listener->sendMessage(message);
         }
     }

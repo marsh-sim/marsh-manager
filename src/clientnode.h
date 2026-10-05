@@ -75,6 +75,8 @@ public:
     bool shadowed() const { return _state == State::Shadowed; }
     /// Messages that this client is interested in receiving
     QSet<MessageId> subscribedMessages() const;
+    /// Same as subscribedMessages().contains(id), without allocating
+    bool isSubscribed(MessageId id) const;
     CustomMode customMode() const { return _customMode; }
 
     void setShadowed(bool shadowed);
@@ -99,8 +101,8 @@ public:
 signals:
     void stateChanged(State state);
     void shadowedChanged(bool shadowed);
-    void messageReceived(Message message);
-    void messageSent(Message message);
+    void messageReceived(const Message &message);
+    void messageSent(const Message &message);
     void subscribedMessagesChanged(QSet<MessageId> ids);
 
 private slots:
@@ -114,12 +116,12 @@ private:
 
     void handleCommand(Message message);
 
-    ApplicationData* appData;
+    ApplicationData *appData = nullptr;
     Connection _connection;
     State _state;
     /// This is the first *currently* connected client with this system id and component id
     bool firstSysidCompid;
-    CustomMode _customMode;
+    CustomMode _customMode = CustomMode::None;
     MessageId customModeMessage;
     QSet<MessageId> _subscribedMessages;
 

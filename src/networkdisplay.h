@@ -63,10 +63,13 @@ public slots:
 
 private slots:
     void addClient(ClientNode *const client);
+    void removeClient(ClientNode *const client);
     void clientStateChanged(ClientNode::State state);
-    void clientMessageReceived(Message message);
-    void clientMessageSent(Message message);
+    void clientMessageReceived(const Message &message);
+    void clientMessageSent(const Message &message);
     void clientSubscriptionsChanged(QSet<MessageId> subs);
+    /// Displays the latest of each message that arrived since the previous refresh
+    void refreshMessages();
 
 private:
     enum class Direction {
@@ -79,8 +82,15 @@ private:
         PlottingRole,
     };
 
-    void handleClientMessage(ClientNode *const client, Message message, Direction direction);
-    void handleParamValue(ClientNode *const client, Message message);
+    /// Message ids to display on next refresh, keeps model updates out of the routing path
+    struct PendingMessages
+    {
+        QSet<MessageId> received;
+        QSet<MessageId> sent;
+    };
+
+    void handleClientMessage(ClientNode *const client, const Message &message, Direction direction);
+    void handleParamValue(ClientNode *const client, const Message &message);
     void updateSubscribed(ClientNode *const client);
     QString formatFieldData(QVariant data) const;
     QString formatPascalCase(QString pascal) const;
@@ -101,6 +111,8 @@ private:
 
     QMap<ClientNode *, QStandardItem *> clientItems;
     QMap<QString, MessageId> messageNameToId;
+    QHash<ClientNode *, PendingMessages> pendingMessages;
+    QTimer *refreshTimer;
 };
 
 #endif // NETWORKMODEL_H

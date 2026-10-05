@@ -39,6 +39,19 @@ QSet<MessageId> ClientNode::subscribedMessages() const
         return _subscribedMessages;
 }
 
+bool ClientNode::isSubscribed(MessageId id) const
+{
+    switch (_customMode) {
+    case CustomMode::SingleMessage:
+        return id == customModeMessage;
+    case CustomMode::AllMessages:
+        return true;
+    case CustomMode::None:
+    default:
+        return _subscribedMessages.contains(id);
+    }
+}
+
 void ClientNode::setShadowed(bool shadowed)
 {
     if (shadowed != firstSysidCompid) {

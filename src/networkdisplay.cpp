@@ -6,6 +6,7 @@
 #include <QTimer>
 #include "applicationdata.h"
 #include "mavlink/all/mavlink.h" // IWYU pragma: keep; always include the mavlink.h file for selected dialect
+#include <algorithm>
 #include <cmath>
 
 NetworkDisplay::NetworkDisplay(QObject *parent)
@@ -25,12 +26,19 @@ NetworkDisplay::NetworkDisplay(QObject *parent)
         headerLabels.push_back(name(static_cast<Column>(i)));
     }
     _model->setHorizontalHeaderLabels(headerLabels);
+
+    // updating the model for every message would take most of the time spent routing them
+    refreshTimer = new QTimer(this);
+    refreshTimer->setInterval(100);
+    connect(refreshTimer, &QTimer::timeout, this, &NetworkDisplay::refreshMessages);
+    refreshTimer->start();
 }
 
 void NetworkDisplay::setAppData(ApplicationData *appData)
 {
     this->appData = appData;
     connect(appData->router(), &Router::clientAdded, this, &NetworkDisplay::addClient);
+    connect(appData->router(), &Router::clientRemoved, this, &NetworkDisplay::removeClient);
 }
 
 void NetworkDisplay::addClient(ClientNode *const client)
@@ -114,6 +122,17 @@ void NetworkDisplay::addClient(ClientNode *const client)
     connect(client, &ClientNode::messageSent, this, &NetworkDisplay::clientMessageSent);
     connect(client, &ClientNode::subscribedMessagesChanged, this, &NetworkDisplay::clientSubscriptionsChanged);
     // clang-format on
+}
+
+void NetworkDisplay::removeClient(ClientNode *const client)
+{
+    const auto clientItem = clientItems.value(client, nullptr);
+    if (!clientItem)
+        return;
+
+    pendingMessages.remove(client);
+    _model->invisibleRootItem()->removeRow(clientItem->row());
+    clientItems.remove(client);
 }
 
 void NetworkDisplay::itemClicked(const QModelIndex &index)
@@ -223,26 +242,58 @@ void NetworkDisplay::clientSubscriptionsChanged(QSet<MessageId> subs)
     updateSubscribed(sender);
 }
 
-void NetworkDisplay::clientMessageReceived(Message message)
+void NetworkDisplay::clientMessageReceived(const Message &message)
 {
     // HACK: getting sender is not recommended, won't bee needed after rework to QAbstractModel
     const auto sender = qobject_cast<ClientNode *>(QObject::sender());
     Q_ASSERT_X(sender,
                "NetworkDisplay::clientMessageReceived",
                "this signal must be sent by a client");
-    handleClientMessage(sender, message, Direction::Received);
+    pendingMessages[sender].received.insert(message.id());
+
+    // every message holds a different parameter, so only displaying the last one would lose them
+    if (message.id() == MessageId(MAVLINK_MSG_ID_PARAM_VALUE))
+        handleParamValue(sender, message);
 }
 
-void NetworkDisplay::clientMessageSent(Message message)
+void NetworkDisplay::clientMessageSent(const Message &message)
 {
     // HACK: getting sender is not recommended, won't bee needed after rework to QAbstractModel
     const auto sender = qobject_cast<ClientNode *>(QObject::sender());
     Q_ASSERT_X(sender, "NetworkDisplay::clientMessageSent", "this signal must be sent by a client");
-    handleClientMessage(sender, message, Direction::Sent);
+    pendingMessages[sender].sent.insert(message.id());
+}
+
+void NetworkDisplay::refreshMessages()
+{
+    const auto displayPending = [this](ClientNode *const client,
+                                       const QSet<MessageId> &ids,
+                                       const QMap<MessageId, ClientNode::MessageHistory> &history,
+                                       Direction direction) {
+        QList<const Message *> messages;
+        for (const auto id : ids) {
+            const auto it = history.constFind(id);
+            if (it != history.cend())
+                messages.push_back(&it->last);
+        }
+        // in order of arrival, so that the summary rows show the latest message
+        std::sort(messages.begin(), messages.end(), [](const Message *a, const Message *b) {
+            return a->timestamp < b->timestamp;
+        });
+        for (const auto message : std::as_const(messages))
+            handleClientMessage(client, *message, direction);
+    };
+
+    for (auto it = pendingMessages.cbegin(); it != pendingMessages.cend(); ++it) {
+        const auto client = it.key();
+        displayPending(client, it->received, client->receivedMessages, Direction::Received);
+        displayPending(client, it->sent, client->sentMessages, Direction::Sent);
+    }
+    pendingMessages.clear();
 }
 
 void NetworkDisplay::handleClientMessage(ClientNode *const client,
-                                         Message message,
+                                         const Message &message,
                                          Direction direction)
 {
     const auto clientItem = clientItems[client];
@@ -262,10 +313,10 @@ void NetworkDisplay::handleClientMessage(ClientNode *const client,
 
     const auto directionRow = direction == Direction::Received ? ClientRow::ReceivedMessages
                                                                : ClientRow::SentMessages;
-    const auto directionFrequency = direction == Direction::Received ? client->receiveFrequency
-                                                                     : client->sendFrequency;
-    const auto directionHistory = direction == Direction::Received ? client->receivedMessages
-                                                                   : client->sentMessages;
+    const auto &directionFrequency = direction == Direction::Received ? client->receiveFrequency
+                                                                      : client->sendFrequency;
+    const auto &directionHistory = direction == Direction::Received ? client->receivedMessages
+                                                                    : client->sentMessages;
 
     // update time of any message in this direction
     clientItem->child(order(directionRow), order(Column::Updated))
@@ -356,17 +407,9 @@ void NetworkDisplay::handleClientMessage(ClientNode *const client,
                 ->setData(formatUpdateTime(message.timestamp), Qt::DisplayRole);
         }
     }
-
-    if (direction == Direction::Received) {
-        switch (message.m.msgid) {
-        case MAVLINK_MSG_ID_PARAM_VALUE:
-            handleParamValue(client, message);
-            break;
-        }
-    }
 }
 
-void NetworkDisplay::handleParamValue(ClientNode *const client, Message message)
+void NetworkDisplay::handleParamValue(ClientNode *const client, const Message &message)
 {
     Q_ASSERT(message.id() == MessageId(MAVLINK_MSG_ID_PARAM_VALUE));
     const auto clientItem = clientItems[client];

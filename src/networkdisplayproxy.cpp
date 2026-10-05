@@ -4,12 +4,19 @@
 
 NetworkDisplayProxy::NetworkDisplayProxy(QObject *parent)
     : QSortFilterProxyModel{parent}
-{}
+{
+    // filtering depends only on hidden clients and is invalidated explicitly when they change,
+    // so there is no need to filter again on every data change
+    setDynamicSortFilter(false);
+}
 
 void NetworkDisplayProxy::setAppData(ApplicationData *appData)
 {
     _networkDisplay = appData->networkDisplay();
     setSourceModel(_networkDisplay->model());
+    connect(appData->router(), &Router::clientRemoved, this, [this](ClientNode *client) {
+        showClient(client); // the row is already removed from the source model
+    });
 }
 
 void NetworkDisplayProxy::hideCurrentlyTimedOut()
